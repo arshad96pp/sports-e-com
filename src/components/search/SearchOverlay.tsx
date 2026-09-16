@@ -29,7 +29,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
     recentSearches,
     addRecentSearch,
     clearRecentSearches,
-  } = useSearchState();
+  } = useSearchState(open);
 
   function goToSearch(term: string) {
     const trimmed = term.trim();

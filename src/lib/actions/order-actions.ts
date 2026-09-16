@@ -4,7 +4,6 @@ import { addressSchema } from "@/lib/validations/auth";
 import { buildOrderMessage, buildWhatsAppLink, type WhatsAppOrderLine } from "@/lib/utils/whatsapp";
 import { getStoreSettings } from "@/lib/services/settings-service";
 import { getCurrentUser, getCurrentCustomerId } from "@/lib/auth/session";
-import { createClient } from "@/lib/supabase/server";
 import * as orderService from "@/lib/services/order-service";
 import type { OrderDTO } from "@/lib/services/order-service";
 import type { Address } from "@/lib/types";
@@ -17,11 +16,11 @@ export interface BuildWhatsAppOrderLinkResult {
 }
 
 /**
- * Places the order (via the `create_order` RPC — validates stock, recomputes
- * pricing server-side, writes `orders`/`order_items`, decrements stock) and
- * then builds the WhatsApp link the customer sends to the store owner. The
- * WhatsApp message is a notification of an order that now exists in the
- * database, not the order mechanism itself.
+ * Places the order (via `order-service.placeOrder` — validates stock,
+ * recomputes pricing server-side, writes `orders`/`order_items`, decrements
+ * stock, atomically) and then builds the WhatsApp link the customer sends to
+ * the store owner. The WhatsApp message is a notification of an order that
+ * now exists in the database, not the order mechanism itself.
  */
 export async function buildWhatsAppOrderLinkAction(
   lines: WhatsAppOrderLine[],
@@ -42,35 +41,21 @@ export async function buildWhatsAppOrderLinkAction(
     return { ok: false, error: "Your order has no items." };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_order", {
-    p_address: {
-      fullName: parsedAddress.data.fullName,
-      phone: parsedAddress.data.phone,
-      line1: parsedAddress.data.line1,
-      city: parsedAddress.data.city,
-      state: parsedAddress.data.state,
-      pincode: parsedAddress.data.pincode,
-    },
-    p_address_id: null,
-    p_lines: lines.map((l) => ({
-      product_id: l.productId,
-      quantity: l.quantity,
-      size: l.size ?? null,
-      color: l.color ?? null,
-    })),
-  });
-
-  if (error || !data) {
-    return { ok: false, error: error?.message ?? "Could not place your order. Please try again." };
+  let order;
+  try {
+    order = await orderService.placeOrder(
+      parsedAddress.data,
+      lines.map((l) => ({ productId: l.productId, quantity: l.quantity, size: l.size ?? null, color: l.color ?? null }))
+    );
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Could not place your order. Please try again." };
   }
 
-  const order = data as { order_number: string; total: number };
   const message = buildOrderMessage({ total: order.total, address: parsedAddress.data, lines });
   const settings = await getStoreSettings();
   const whatsappUrl = buildWhatsAppLink(message, settings.whatsappNumber);
 
-  return { ok: true, whatsappUrl, orderNumber: order.order_number };
+  return { ok: true, whatsappUrl, orderNumber: order.orderNumber };
 }
 
 /** Customer-only: an admin session never returns "their own orders" here. */

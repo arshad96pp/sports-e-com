@@ -13,16 +13,22 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export default async function Home() {
+// Own async component (instead of `Home` awaiting banners itself) so this
+// fetch runs concurrently with CategorySection/FeaturedProducts/BestSellers/
+// OffersSection's fetches below, rather than blocking them from starting.
+async function HeroSection() {
   const banners = await getActiveHeroBanners();
+  return <Hero banners={banners} />;
+}
 
+export default function Home() {
   return (
     <>
       <JsonLd data={organizationJsonLd()} />
 
       <JsonLd data={websiteJsonLd()} />
 
-      <Hero banners={banners} />
+      <HeroSection />
 
       <CategorySection />
 
@@ -31,7 +37,7 @@ export default async function Home() {
       <BestSellers />
 
       <OffersSection />
-      
+
       <WhyChooseUs />
     </>
   );

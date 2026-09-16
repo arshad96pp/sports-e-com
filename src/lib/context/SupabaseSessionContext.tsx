@@ -1,20 +1,20 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthClientPort } from "@/lib/config/providers.client";
+import type { AuthUser } from "@/lib/core/ports/auth.port";
 
 type SessionStatus = "loading" | "authenticated" | "unauthenticated";
 
 interface SupabaseSessionValue {
   status: SessionStatus;
-  user: User | null;
+  user: AuthUser | null;
 }
 
 const SupabaseSessionContext = createContext<SupabaseSessionValue | null>(null);
 
 /**
- * Single shared subscription to Supabase's client-side auth state, so
+ * Single shared subscription to the provider's client-side auth state, so
  * AuthContext/CartContext/WishlistContext don't each open their own listener.
  * Mirrors the shape of next-auth's `useSession()` (`status` + `user`) that
  * those contexts were originally built against, to keep their code unchanged.
@@ -23,23 +23,21 @@ export function SupabaseSessionProvider({ children }: { children: React.ReactNod
   const [state, setState] = useState<SupabaseSessionValue>({ status: "loading", user: null });
 
   useEffect(() => {
-    const supabase = createClient();
+    const auth = getAuthClientPort();
     let active = true;
 
-    supabase.auth.getUser().then(({ data }) => {
+    auth.getUser().then((user) => {
       if (!active) return;
-      setState({ status: data.user ? "authenticated" : "unauthenticated", user: data.user });
+      setState({ status: user ? "authenticated" : "unauthenticated", user });
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ status: session?.user ? "authenticated" : "unauthenticated", user: session?.user ?? null });
+    const unsubscribe = auth.onAuthStateChange((user) => {
+      setState({ status: user ? "authenticated" : "unauthenticated", user });
     });
 
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 

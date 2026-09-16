@@ -1,6 +1,6 @@
 import "server-only";
 
-/** Category repository — delegates to the Prisma-backed category service. */
+/** Category repository — delegates to `category-service`, which calls the active `CategoryRepository` port (Supabase today, see `lib/config/providers.ts`). */
 export {
   getAllCategories,
   getCategoryBySlug,

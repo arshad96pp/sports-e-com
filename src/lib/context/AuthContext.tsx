@@ -5,7 +5,7 @@ import type { Address, UserProfile } from "@/lib/types";
 import type { AddressDTO } from "@/lib/services/address-service";
 import { useToast } from "@/lib/context/ToastContext";
 import { useSupabaseSession } from "@/lib/context/SupabaseSessionContext";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthClientPort } from "@/lib/config/providers.client";
 import { loginSchema, registerSchema } from "@/lib/validations/auth";
 import { getMyProfileAction } from "@/lib/actions/profile-actions";
 import {
@@ -61,8 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!parsed.success) {
         return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid details" };
       }
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword(parsed.data);
+      const { error } = await getAuthClientPort().signInWithPassword(parsed.data.email, parsed.data.password);
       if (error) {
         if (error.code === "email_not_confirmed") {
           return {
@@ -89,11 +88,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!parsed.success) {
         return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid details" };
       }
-      const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
-        email: parsed.data.email,
-        password: parsed.data.password,
-        options: { data: { full_name: parsed.data.fullName, phone: parsed.data.phone } },
+      const { error } = await getAuthClientPort().signUp(parsed.data.email, parsed.data.password, {
+        fullName: parsed.data.fullName,
+        phone: parsed.data.phone,
       });
       if (error) {
         const message = error.message.toLowerCase().includes("already registered")
@@ -108,8 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    const supabase = createClient();
-    void supabase.auth.signOut();
+    void getAuthClientPort().signOut();
     showToast("You have been logged out", "info");
   }, [showToast]);
 

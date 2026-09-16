@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthClientPort } from "@/lib/config/providers.client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,26 +15,31 @@ export function AdminLoginClient() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const submittingRef = useRef(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setPending(true);
     setError(null);
 
-    const supabase = createClient();
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const auth = getAuthClientPort();
+    const { user, error: signInError } = await auth.signInWithPassword(email, password);
 
-    if (signInError || !data.user) {
+    if (signInError || !user) {
       setError("Incorrect email or password.");
+      submittingRef.current = false;
       setPending(false);
       return;
     }
 
-    const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", data.user.id).single();
+    const profile = await auth.getProfileRole(user.id);
 
-    if (!profile || profile.role !== "super_admin" || !profile.is_active) {
-      await supabase.auth.signOut();
+    if (!profile || profile.role !== "super_admin" || !profile.isActive) {
+      await auth.signOut();
       setError("Access denied — this account is not authorized for admin access.");
+      submittingRef.current = false;
       setPending(false);
       return;
     }

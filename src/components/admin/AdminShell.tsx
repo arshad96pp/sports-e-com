@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -18,7 +18,7 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthClientPort } from "@/lib/config/providers.client";
 import { STORE } from "@/lib/config";
 import { Button } from "@/components/ui/button";
 
@@ -39,10 +39,12 @@ export function AdminShell({ adminName, children }: { adminName: string; childre
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const loggingOutRef = useRef(false);
 
   async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    if (loggingOutRef.current) return;
+    loggingOutRef.current = true;
+    await getAuthClientPort().signOut();
     router.push("/admin/login");
     router.refresh();
   }

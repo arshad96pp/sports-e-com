@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthSessionPort } from "@/lib/config/providers";
 
 export interface CurrentUser {
   id: string;
@@ -10,30 +10,23 @@ export interface CurrentUser {
 }
 
 /**
- * Verifies the session against the Supabase auth server (not just the cookie)
- * and returns the caller's profile, or null if signed out. Every server action
+ * Verifies the session against the auth provider (not just the cookie) and
+ * returns the caller's profile, or null if signed out. Every server action
  * and service that needs to know "who is calling" goes through this — never
  * trust a role or user id passed from the client.
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = getAuthSessionPort();
+  const user = await auth.getAuthenticatedUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, email, phone, role, is_active")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || !profile.is_active) return null;
+  const profile = await auth.getProfileById(user.id);
+  if (!profile || !profile.isActive) return null;
 
   return {
     id: user.id,
     email: profile.email,
-    fullName: profile.full_name,
+    fullName: profile.fullName,
     phone: profile.phone,
     role: profile.role,
   };
@@ -49,4 +42,13 @@ export async function getCurrentCustomerId(): Promise<string | null> {
   const user = await getCurrentUser();
   if (!user || user.role !== "customer") return null;
   return user.id;
+}
+
+/**
+ * Errors are intentionally swallowed beyond validation (the caller validates
+ * the email shape) — the UI always shows a generic "if an account exists"
+ * message so this can't be used to enumerate registered emails.
+ */
+export async function resetPasswordForEmail(email: string, redirectTo: string): Promise<void> {
+  await getAuthSessionPort().resetPasswordForEmail(email, redirectTo);
 }

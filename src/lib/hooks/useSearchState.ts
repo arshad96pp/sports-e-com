@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Product } from "@/lib/types";
 import {
   getSearchIdleContentAction,
@@ -19,8 +19,13 @@ const DEBOUNCE_MS = 260;
  * `getSearchIdleContentAction` are the only functions that touch product
  * data — both run a targeted database query server-side rather than shipping
  * the whole catalogue to the browser to filter.
+ *
+ * `open` gates the idle-content fetch: the overlay is mounted (but hidden)
+ * on every page via `HeaderActions`, so fetching on mount would cost every
+ * visitor 2 Supabase queries even if they never open search. Fetched once,
+ * on first open only.
  */
-export function useSearchState() {
+export function useSearchState(open: boolean) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SearchStatus>("idle");
   const [matchingProducts, setMatchingProducts] = useState<Product[]>([]);
@@ -28,13 +33,16 @@ export function useSearchState() {
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
   const [curatedForYou, setCuratedForYou] = useState<Product[]>([]);
   const { recent, add: addRecentSearch, clear: clearRecentSearches } = useRecentSearches();
+  const idleFetchedRef = useRef(false);
 
   useEffect(() => {
+    if (!open || idleFetchedRef.current) return;
+    idleFetchedRef.current = true;
     getSearchIdleContentAction().then(({ bestSellers, curatedForYou }) => {
       setBestSellers(bestSellers);
       setCuratedForYou(curatedForYou);
     });
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (query.trim() === "") {

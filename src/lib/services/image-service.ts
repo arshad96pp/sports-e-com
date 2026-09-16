@@ -1,9 +1,10 @@
 import "server-only";
 import sharp from "sharp";
 import type { Sharp, Metadata, OutputInfo } from "sharp";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getStoragePort } from "@/lib/config/providers";
+import type { ImageBucket } from "@/lib/core/ports/storage.port";
 
-export type ImageBucket = "product-images" | "category-images" | "banner-images" | "store-assets";
+export type { ImageBucket };
 
 const ACCEPTED_MIME_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]);
 const MAX_INPUT_BYTES = 12 * 1024 * 1024; // 12MB — generous, this is the *pre*-optimization ceiling.
@@ -23,10 +24,11 @@ export type ImageUploadResult =
  * Full admin image-upload pipeline: validate (declared MIME + actual decoded
  * bytes, size ceiling) → resize to a bucket-appropriate max box (preserving
  * aspect ratio, never upscaling) → strip metadata → re-encode to WebP → upload
- * the optimized WebP (never the original) to Supabase Storage. Runs entirely
- * in memory (buffers only) so it works on Vercel's serverless runtime with no
- * persistent filesystem. Used by every admin image upload form (products,
- * categories, banners) — one place to change quality/size behaviour.
+ * the optimized WebP (never the original) via the storage provider. Runs
+ * entirely in memory (buffers only) so it works on Vercel's serverless
+ * runtime with no persistent filesystem. Used by every admin image upload
+ * form (products, categories, banners) — one place to change quality/size
+ * behaviour. None of this depends on which provider backs storage.
  */
 export async function processAndUploadImage(
   file: File,
@@ -80,23 +82,13 @@ export async function processAndUploadImage(
   }
 
   const path = `${pathPrefix}/${crypto.randomUUID()}.webp`;
-  const supabase = createAdminClient();
-  const { error: uploadError } = await supabase.storage.from(bucket).upload(path, optimized, {
-    contentType: "image/webp",
-    cacheControl: "31536000",
-    upsert: false,
-  });
-
-  if (uploadError) {
-    return { ok: false, error: `Upload failed: ${uploadError.message}` };
-  }
-
-  const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(path);
+  const uploaded = await getStoragePort().upload(bucket, path, optimized, "image/webp");
+  if (!uploaded.ok) return uploaded;
 
   return {
     ok: true,
-    path,
-    publicUrl: publicUrlData.publicUrl,
+    path: uploaded.path,
+    publicUrl: uploaded.publicUrl,
     width: outputInfo.width,
     height: outputInfo.height,
     bytes: optimized.byteLength,
@@ -104,11 +96,10 @@ export async function processAndUploadImage(
 }
 
 export async function deleteImage(bucket: ImageBucket, path: string): Promise<void> {
-  const supabase = createAdminClient();
-  await supabase.storage.from(bucket).remove([path]);
+  await getStoragePort().remove(bucket, path);
 }
 
-/** Extracts the storage path from a Supabase Storage public URL, for deletes. */
+/** Extracts the storage path from a public storage URL, for deletes. */
 export function pathFromPublicUrl(bucket: ImageBucket, publicUrl: string): string | null {
   const marker = `/storage/v1/object/public/${bucket}/`;
   const idx = publicUrl.indexOf(marker);
