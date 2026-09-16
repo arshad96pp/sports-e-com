@@ -5,14 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { STORE } from "@/lib/config";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useToast } from "@/lib/context/ToastContext";
+import { getAuthClientPort } from "@/lib/config/providers.client";
+import { registerSchema } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function RegisterPageClient() {
-  const { register } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -31,21 +33,38 @@ export function RegisterPageClient() {
       setError("Passwords do not match");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+
+    const parsed = registerSchema.safeParse({ fullName, email, phone, password });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid details");
       return;
     }
+
     submittingRef.current = true;
     setIsSubmitting(true);
     setError(null);
-    const result = await register({ fullName, email, phone }, password);
-    if (!result.ok) {
-      setError(result.error ?? "Something went wrong");
+
+    try {
+      const { error } = await getAuthClientPort().signUp(parsed.data.email, parsed.data.password, {
+        fullName: parsed.data.fullName,
+        phone: parsed.data.phone,
+      });
+      if (error) {
+        setError(
+          error.message.toLowerCase().includes("already registered")
+            ? "An account with this email already exists."
+            : error.message
+        );
+        return;
+      }
+      showToast(`Account created. Welcome, ${parsed.data.fullName.split(" ")[0]}!`, "success");
+      router.replace("/account");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
-      return;
     }
-    router.push("/account");
   }
 
   return (
@@ -54,7 +73,7 @@ export function RegisterPageClient() {
         <div className="mb-8 text-center">
           <span className="font-display text-2xl font-extrabold tracking-tight text-ink">{STORE.name}</span>
           <h1 className="mt-4 font-display text-xl font-bold text-ink">Create your account</h1>
-          <p className="mt-1 text-sm text-muted">Join to track orders and save your favourites</p>
+          <p className="mt-1 text-sm text-muted">Join to save your favourites and addresses</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

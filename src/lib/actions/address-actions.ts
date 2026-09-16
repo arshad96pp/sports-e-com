@@ -5,7 +5,12 @@ import { getCurrentCustomerId } from "@/lib/auth/session";
 import { addressSchema } from "@/lib/validations/auth";
 import * as addressService from "@/lib/services/address-service";
 import type { Address } from "@/lib/types";
-import type { ActionResult } from "@/lib/actions/auth-actions";
+
+export interface ActionResult<T = undefined> {
+  ok: boolean;
+  error?: string;
+  data?: T;
+}
 
 export async function listMyAddressesAction(): Promise<addressService.AddressDTO[]> {
   const userId = await getCurrentCustomerId();
@@ -13,7 +18,7 @@ export async function listMyAddressesAction(): Promise<addressService.AddressDTO
   return addressService.listAddresses(userId);
 }
 
-export async function createAddressAction(input: Address): Promise<ActionResult> {
+export async function createAddressAction(input: Address): Promise<ActionResult<addressService.AddressDTO>> {
   const userId = await getCurrentCustomerId();
   if (!userId) return { ok: false, error: "You must be logged in." };
 
@@ -22,9 +27,9 @@ export async function createAddressAction(input: Address): Promise<ActionResult>
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid address" };
   }
 
-  await addressService.createAddress(userId, parsed.data);
+  const created = await addressService.createAddress(userId, parsed.data);
   revalidatePath("/account");
-  return { ok: true };
+  return { ok: true, data: created };
 }
 
 export async function deleteAddressAction(addressId: string): Promise<ActionResult> {

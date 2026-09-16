@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { useBuyNow } from "@/lib/context/BuyNowContext";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useCart } from "@/lib/context/CartContext";
 import { useToast } from "@/lib/context/ToastContext";
 import { buildWhatsAppOrderLinkAction } from "@/lib/actions/order-actions";
+import { createAddressAction, listMyAddressesAction } from "@/lib/actions/address-actions";
+import type { AddressDTO } from "@/lib/services/address-service";
 import { formatPrice } from "@/lib/utils/format";
 import { WhatsAppIcon } from "@/components/icons/SportIcons";
 import {
@@ -27,7 +29,7 @@ const EMPTY_ADDRESS: Address = { fullName: "", phone: "", line1: "", city: "", s
 
 export function BuyNowModal() {
   const { request, closeBuyNow } = useBuyNow();
-  const { user, addresses, addAddress } = useAuth();
+  const { user } = useAuth();
   const { clear: clearCart } = useCart();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -36,20 +38,39 @@ export function BuyNowModal() {
   const [saveAddress, setSaveAddress] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof Address, boolean>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Saved addresses rarely change mid-session — cache across modal opens
+  // (Buy Now can be triggered repeatedly from a PDP or the cart) instead of
+  // refetching every time the dialog opens. Cleared back to null whenever a
+  // save fails, so the next open falls back to a fresh fetch.
+  const addressCacheRef = useRef<AddressDTO[] | null>(null);
 
   useEffect(() => {
-    if (request) {
-      const preset = addresses[0];
-      // Reset the form each time a new buy-now request opens.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAddress(
-        preset ?? { ...EMPTY_ADDRESS, fullName: user?.fullName ?? "", phone: user?.phone ?? "" }
-      );
-      setErrors({});
-      setSubmitError(null);
-      setSaveAddress(false);
+    if (!request) return;
+    // Reset the form each time a new buy-now request opens, then prefill
+    // from the account's saved address once it's fetched.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAddress({ ...EMPTY_ADDRESS, fullName: user?.fullName ?? "", phone: user?.phone ?? "" });
+    setErrors({});
+    setSubmitError(null);
+    setSaveAddress(false);
+
+    if (addressCacheRef.current) {
+      const preset = addressCacheRef.current[0];
+      if (preset) setAddress(preset);
+      return;
     }
-  }, [request, addresses, user]);
+
+    let cancelled = false;
+    listMyAddressesAction().then((addresses) => {
+      if (cancelled) return;
+      addressCacheRef.current = addresses;
+      const preset = addresses[0];
+      if (preset) setAddress(preset);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [request, user]);
 
   const lines = request?.lines ?? [];
   const clearCartAfter = request?.clearCartAfter ?? false;
@@ -95,8 +116,18 @@ export function BuyNowModal() {
         return;
       }
 
-      if (saveAddress) addAddress(address);
-      if (clearCartAfter) await clearCart();
+      if (saveAddress) {
+        void createAddressAction(address).then((res) => {
+          if (res.ok && res.data && addressCacheRef.current) {
+            addressCacheRef.current = [...addressCacheRef.current, res.data];
+          } else if (!res.ok) {
+            addressCacheRef.current = null;
+          }
+        });
+      }
+      // Fire-and-forget: clearing the cart doesn't affect the WhatsApp
+      // message that's about to open, so don't make the user wait on it.
+      if (clearCartAfter) void clearCart();
 
       window.open(result.whatsappUrl, "_blank", "noopener,noreferrer");
       showToast("Your order details are ready in WhatsApp. Please send the message to the store to complete your request.", "success");

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Heart, ShoppingBag, X } from "lucide-react";
 import { useWishlist } from "@/lib/context/WishlistContext";
 import { useCart } from "@/lib/context/CartContext";
+import { useProductsByIds } from "@/lib/hooks/useProductsByIds";
 import { getDiscountPercent } from "@/lib/data/products";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { PriceBlock } from "@/components/ui/PriceBlock";
@@ -13,8 +14,10 @@ import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { EmptyState } from "@/components/common/EmptyState";
 
 export function WishlistPageClient() {
-  const { products, remove } = useWishlist();
+  const { productIds, remove } = useWishlist();
   const { addItem } = useCart();
+  const productMap = useProductsByIds(productIds);
+  const products = productIds.map((id) => productMap[id]).filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   if (products.length === 0) {
     return (

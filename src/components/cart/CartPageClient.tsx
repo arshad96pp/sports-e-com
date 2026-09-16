@@ -1,10 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/lib/context/CartContext";
 import { useWishlist } from "@/lib/context/WishlistContext";
 import { useBuyNow } from "@/lib/context/BuyNowContext";
+import { useProductsByIds } from "@/lib/hooks/useProductsByIds";
 import { formatPrice } from "@/lib/utils/format";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
@@ -14,9 +16,25 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { Button } from "@/components/ui/button";
 
 export function CartPageClient() {
-  const { items, products, subtotal, mrpTotal, discount, updateQuantity, removeItem } = useCart();
+  const { items, updateQuantity, removeItem } = useCart();
   const { toggle: toggleWishlist } = useWishlist();
   const { openBuyNow } = useBuyNow();
+
+  const productIds = useMemo(() => items.map((i) => i.productId), [items]);
+  const products = useProductsByIds(productIds);
+
+  const { subtotal, mrpTotal } = useMemo(() => {
+    let subtotal = 0;
+    let mrpTotal = 0;
+    for (const item of items) {
+      const product = products[item.productId];
+      if (!product) continue;
+      subtotal += product.price * item.quantity;
+      mrpTotal += product.mrp * item.quantity;
+    }
+    return { subtotal, mrpTotal };
+  }, [items, products]);
+  const discount = mrpTotal - subtotal;
 
   const shipping = items.length === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 79;
   const total = subtotal + shipping;

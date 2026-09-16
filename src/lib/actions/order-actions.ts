@@ -3,9 +3,8 @@
 import { addressSchema } from "@/lib/validations/auth";
 import { buildOrderMessage, buildWhatsAppLink, type WhatsAppOrderLine } from "@/lib/utils/whatsapp";
 import { getStoreSettings } from "@/lib/services/settings-service";
-import { getCurrentUser, getCurrentCustomerId } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/session";
 import * as orderService from "@/lib/services/order-service";
-import type { OrderDTO } from "@/lib/services/order-service";
 import type { Address } from "@/lib/types";
 
 export interface BuildWhatsAppOrderLinkResult {
@@ -56,11 +55,4 @@ export async function buildWhatsAppOrderLinkAction(
   const whatsappUrl = buildWhatsAppLink(message, settings.whatsappNumber);
 
   return { ok: true, whatsappUrl, orderNumber: order.orderNumber };
-}
-
-/** Customer-only: an admin session never returns "their own orders" here. */
-export async function getMyOrdersAction(): Promise<OrderDTO[]> {
-  const userId = await getCurrentCustomerId();
-  if (!userId) return [];
-  return orderService.getMyOrders(userId);
 }

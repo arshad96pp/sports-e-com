@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { getProductRepository } from "@/lib/config/providers";
 import { getDiscountPercent } from "@/lib/data/products";
 import type { CategorySlug, Product } from "@/lib/types";
@@ -44,22 +45,48 @@ export async function getProductsByCategory(category: CategorySlug): Promise<Pro
   return getProductRepository().getProductsByCategory(category);
 }
 
-export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
-  return getProductRepository().getFeaturedProducts(limit);
-}
+/**
+ * Home-page/listing product sets are public and don't need per-second
+ * freshness — cached the same way as `getAllCategories`: `revalidate: 120`
+ * as a safety net, `revalidateTag("products", { expire: 0 })` from admin
+ * product actions for instant invalidation on create/update/delete.
+ */
+export const getFeaturedProducts = unstable_cache(
+  async (limit = 8): Promise<Product[]> => getProductRepository().getFeaturedProducts(limit),
+  ["products:featured"],
+  { tags: ["products"], revalidate: 120 }
+);
 
-export async function getBestSellers(limit = 12): Promise<Product[]> {
-  return getProductRepository().getBestSellers(limit);
-}
+export const getBestSellers = unstable_cache(
+  async (limit = 12): Promise<Product[]> => getProductRepository().getBestSellers(limit),
+  ["products:best-sellers"],
+  { tags: ["products"], revalidate: 120 }
+);
 
-/** Business rule: a "deal" is anything flagged `dealOfTheDay`, or discounted 25%+; flagged deals sort first, then by discount. */
-export async function getDealProducts(limit = 8): Promise<Product[]> {
-  const products = await getProductRepository().getRecentProducts(200);
-  return products
-    .filter((p) => p.dealOfTheDay || getDiscountPercent(p) >= 25)
-    .sort((a, b) => Number(b.dealOfTheDay) - Number(a.dealOfTheDay) || getDiscountPercent(b) - getDiscountPercent(a))
-    .slice(0, limit);
-}
+/**
+ * Business rule: a "deal" is anything flagged `dealOfTheDay`, or discounted
+ * 25%+; flagged deals sort first, then by discount. Flagged deals are a
+ * direct, cheap DB query; the discount-based fallback only runs (and only
+ * scans a bounded 60-row pool, not the whole catalog) when flagged deals
+ * don't fill the requested count.
+ */
+export const getDealProducts = unstable_cache(
+  async (limit = 8): Promise<Product[]> => {
+    const repo = getProductRepository();
+    const flagged = await repo.getDealOfTheDayProducts(limit);
+    if (flagged.length >= limit) return flagged;
+
+    const pool = await repo.getRecentProducts(60);
+    const flaggedIds = new Set(flagged.map((p) => p.id));
+    const discounted = pool
+      .filter((p) => !flaggedIds.has(p.id) && !p.dealOfTheDay && getDiscountPercent(p) >= 25)
+      .sort((a, b) => getDiscountPercent(b) - getDiscountPercent(a));
+
+    return [...flagged, ...discounted].slice(0, limit);
+  },
+  ["products:deals"],
+  { tags: ["products"], revalidate: 120 }
+);
 
 export async function getRelatedProducts(product: Pick<Product, "id" | "category">, limit = 4): Promise<Product[]> {
   return getProductRepository().getRelatedProducts(product, limit);
@@ -78,9 +105,13 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
 export { getDiscountPercent };
 
-export async function getProductFilterOptions(category?: CategorySlug): Promise<ProductFilterOptions> {
-  return getProductRepository().getProductFilterOptions(category);
-}
+/** Aggregate facet scan over every active (category-scoped) product — expensive, cached like the rest of the public catalog reads above. */
+export const getProductFilterOptions = unstable_cache(
+  async (category?: CategorySlug): Promise<ProductFilterOptions> =>
+    getProductRepository().getProductFilterOptions(category),
+  ["products:filter-options"],
+  { tags: ["products"], revalidate: 120 }
+);
 
 export async function queryProducts(params: ProductQueryParams): Promise<ProductQueryResult> {
   return getProductRepository().queryProducts(params);

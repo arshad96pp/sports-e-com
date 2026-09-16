@@ -15,7 +15,7 @@ export function AccountGuard({ children }: { children: React.ReactNode }) {
         <UserCircle className="mb-4 h-14 w-14 text-muted-soft" strokeWidth={1.5} />
         <h1 className="font-display text-xl font-bold text-ink">Login to view this page</h1>
         <p className="mt-1.5 max-w-sm text-sm text-muted">
-          Access your orders, wishlist and account settings after logging in.
+          Access your wishlist and account settings after logging in.
         </p>
         <Link
           href="/login"

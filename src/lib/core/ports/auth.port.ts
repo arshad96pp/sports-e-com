@@ -36,7 +36,6 @@ export interface AuthSessionPort {
 }
 
 export interface AuthClientPort {
-  getUser(): Promise<AuthUser | null>;
   /** Returns an unsubscribe function. */
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void;
   signInWithPassword(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }>;

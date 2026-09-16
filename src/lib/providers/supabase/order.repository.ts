@@ -10,57 +10,6 @@ import type {
   PlaceOrderResult,
 } from "@/lib/core/ports/order.repository";
 
-const ORDER_SELECT =
-  "id, order_number, status, subtotal, discount, total, address_full_name, address_line1, address_city, address_state, address_pincode, created_at, order_items ( product_id, product_name, product_sku, quantity, price, size, color )";
-
-function toDTO(row: {
-  id: string;
-  order_number: string;
-  status: OrderStatus;
-  subtotal: number;
-  discount: number;
-  total: number;
-  address_full_name: string;
-  address_line1: string;
-  address_city: string;
-  address_state: string;
-  address_pincode: string;
-  created_at: string;
-  order_items: {
-    product_id: string | null;
-    product_name: string;
-    product_sku: string;
-    quantity: number;
-    price: number;
-    size: string | null;
-    color: string | null;
-  }[];
-}): OrderDTO {
-  return {
-    id: row.id,
-    orderNumber: row.order_number,
-    status: row.status,
-    subtotal: row.subtotal,
-    discount: row.discount,
-    total: row.total,
-    addressFullName: row.address_full_name,
-    addressLine1: row.address_line1,
-    addressCity: row.address_city,
-    addressState: row.address_state,
-    addressPincode: row.address_pincode,
-    createdAt: row.created_at,
-    items: row.order_items.map((i) => ({
-      productId: i.product_id,
-      productName: i.product_name,
-      productSku: i.product_sku,
-      quantity: i.quantity,
-      price: i.price,
-      size: i.size,
-      color: i.color,
-    })),
-  };
-}
-
 const DETAIL_SELECT =
   "id, order_number, status, subtotal, discount, total, address_full_name, address_phone, address_line1, address_city, address_state, address_pincode, created_at, order_items ( product_id, product_name, product_sku, quantity, price, size, color )";
 
@@ -68,17 +17,6 @@ const LIST_SELECT = "id, order_number, status, total, created_at, address_full_n
 
 export function createSupabaseOrderRepository(): OrderRepository {
   return {
-    /** RLS-scoped: `orders_select_own_or_admin` restricts this to the caller's own rows. */
-    async getMyOrders(userId: string): Promise<OrderDTO[]> {
-      const supabase = await createClient();
-      const { data } = await supabase
-        .from("orders")
-        .select(ORDER_SELECT)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      return ((data ?? []) as unknown as Parameters<typeof toDTO>[0][]).map(toDTO);
-    },
-
     /**
      * Validates stock, recomputes pricing server-side, writes orders/order_items
      * and decrements stock — all inside the `create_order` RPC (Postgres function),

@@ -5,11 +5,6 @@ import type { OrderDTO, OrderItemDTO, OrderLineInput, OrderStatus, PlaceOrderRes
 
 export type { OrderDTO, OrderItemDTO, OrderStatus, OrderLineInput, PlaceOrderResult };
 
-/** RLS-scoped: `orders_select_own_or_admin` restricts this to the caller's own rows. */
-export async function getMyOrders(userId: string): Promise<OrderDTO[]> {
-  return getOrderRepository().getMyOrders(userId);
-}
-
 /**
  * Places the order (validates stock, recomputes pricing server-side, writes
  * orders/order_items, decrements stock — atomically, via the repository) and

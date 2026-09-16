@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getSuperAdminOrNull } from "@/lib/auth/admin-guard";
 import * as adminBannerService from "@/lib/services/admin-banner-service";
 import type { BannerFormValues } from "@/lib/services/admin-banner-service";
@@ -13,13 +13,19 @@ async function deleteBannerImageIfAny(url: string): Promise<void> {
   if (path) await deleteImage("banner-images", path);
 }
 
+/** Bust the `unstable_cache`-wrapped getActiveHeroBanners (hero-banner-service.ts) and its route cache. */
+function revalidateStorefront() {
+  revalidatePath("/admin/banners");
+  revalidatePath("/");
+  revalidateTag("banners", { expire: 0 });
+}
+
 export async function createBannerAction(values: BannerFormValues): Promise<ActionResult<{ id: string }>> {
   const admin = await getSuperAdminOrNull();
   if (!admin) return { ok: false, error: "Unauthorized" };
   try {
     const result = await adminBannerService.createBanner(values);
-    revalidatePath("/admin/banners");
-    revalidatePath("/");
+    revalidateStorefront();
     return { ok: true, data: result };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not create banner." };
@@ -31,8 +37,7 @@ export async function updateBannerAction(id: string, values: BannerFormValues): 
   if (!admin) return { ok: false, error: "Unauthorized" };
   try {
     await adminBannerService.updateBanner(id, values);
-    revalidatePath("/admin/banners");
-    revalidatePath("/");
+    revalidateStorefront();
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not update banner." };
@@ -50,8 +55,7 @@ export async function deleteBannerAction(id: string): Promise<ActionResult> {
         deleteBannerImageIfAny(removedImages.imageUrlMobile),
       ]);
     }
-    revalidatePath("/admin/banners");
-    revalidatePath("/");
+    revalidateStorefront();
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not delete banner." };
@@ -86,7 +90,6 @@ export async function uploadBannerImageAction(
   const previousUrl = previousUrls ? previousUrls[field] : null;
   if (previousUrl) await deleteBannerImageIfAny(previousUrl);
 
-  revalidatePath("/admin/banners");
-  revalidatePath("/");
+  revalidateStorefront();
   return { ok: true, data: { url: result.publicUrl } };
 }

@@ -100,8 +100,10 @@ export interface ProductRepository {
   getProductsByCategory(category: CategorySlug): Promise<Product[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
   getBestSellers(limit?: number): Promise<Product[]>;
-  /** Active products, newest first, up to `limit` — the raw candidate pool `getDealProducts` applies its business rule to. */
+  /** Active products, newest first, up to `limit` — the fallback candidate pool `getDealProducts` scans for discount-based deals once flagged deals run out. */
   getRecentProducts(limit?: number): Promise<Product[]>;
+  /** Active products explicitly flagged `is_deal_of_the_day`, newest first — the fast path `getDealProducts` prefers over scanning `getRecentProducts`. */
+  getDealOfTheDayProducts(limit?: number): Promise<Product[]>;
   getRelatedProducts(product: Pick<Product, "id" | "category">, limit?: number): Promise<Product[]>;
   getFrequentlyBoughtWith(
     product: Pick<Product, "id" | "category" | "subcategory">,

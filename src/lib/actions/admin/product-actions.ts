@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getSuperAdminOrNull } from "@/lib/auth/admin-guard";
 import * as adminProductService from "@/lib/services/admin-product-service";
 import type { ProductFormValues } from "@/lib/services/admin-product-service";
@@ -17,6 +17,11 @@ function revalidateStorefront() {
   revalidatePath("/category/[slug]", "page");
   revalidatePath("/product/[slug]", "page");
   revalidatePath("/search");
+  // `revalidatePath` above only busts the route cache — the `unstable_cache`
+  // wrappers in product-service.ts (featured/best-sellers/deals/filter
+  // options) need their own tag invalidated so edits show up immediately
+  // instead of waiting out the 120s safety-net TTL.
+  revalidateTag("products", { expire: 0 });
 }
 
 export async function createProductAction(values: ProductFormValues): Promise<ActionResult<{ id: string }>> {

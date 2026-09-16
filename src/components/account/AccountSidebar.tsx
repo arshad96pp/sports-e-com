@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, LogOut, MapPin, Package, Settings, ShoppingCart, User } from "lucide-react";
+import { Heart, LogOut, MapPin, Settings, ShoppingCart, User } from "lucide-react";
 import { useAuth } from "@/lib/context/AuthContext";
 
 const LINKS = [
   { href: "/account", label: "Profile", icon: User },
-  { href: "/account#orders", label: "My Orders", icon: Package },
   { href: "/account#addresses", label: "Saved Addresses", icon: MapPin },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/cart", label: "Cart", icon: ShoppingCart },

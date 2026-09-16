@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getSuperAdminOrNull } from "@/lib/auth/admin-guard";
 import * as adminCategoryService from "@/lib/services/admin-category-service";
 import type { CategoryFormValues, SubcategoryFormValues } from "@/lib/services/admin-category-service";
@@ -10,6 +10,8 @@ import type { ActionResult } from "@/lib/actions/admin/product-actions";
 function revalidateStorefront() {
   revalidatePath("/");
   revalidatePath("/category/[slug]", "page");
+  // Bust the `unstable_cache`-wrapped getAllCategories/getCategoryBySlug (category-service.ts).
+  revalidateTag("categories", { expire: 0 });
 }
 
 export async function createCategoryAction(values: CategoryFormValues): Promise<ActionResult<{ id: string }>> {

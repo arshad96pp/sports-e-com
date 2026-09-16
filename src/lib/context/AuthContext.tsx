@@ -1,37 +1,30 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { Address, UserProfile } from "@/lib/types";
-import type { AddressDTO } from "@/lib/services/address-service";
+import type { UserProfile } from "@/lib/types";
 import { useToast } from "@/lib/context/ToastContext";
 import { useSupabaseSession } from "@/lib/context/SupabaseSessionContext";
 import { getAuthClientPort } from "@/lib/config/providers.client";
-import { loginSchema, registerSchema } from "@/lib/validations/auth";
 import { getMyProfileAction } from "@/lib/actions/profile-actions";
-import {
-  createAddressAction,
-  deleteAddressAction,
-  listMyAddressesAction,
-} from "@/lib/actions/address-actions";
 
 interface AuthContextValue {
   user: UserProfile | null;
   isAuthenticated: boolean;
   hydrated: boolean;
-  addresses: AddressDTO[];
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  register: (profile: UserProfile, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
-  addAddress: (address: Address) => void;
-  removeAddress: (addressId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * Deliberately just identity + display profile. Login/Register call
+ * Supabase directly (see LoginPageClient/RegisterPageClient) so auth never
+ * waits on this; account-data (addresses, orders, etc.) is fetched by the
+ * pages/components that actually need it, not here.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { status } = useSupabaseSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [addresses, setAddresses] = useState<AddressDTO[]>([]);
   const { showToast } = useToast();
 
   const hydrated = status !== "loading";
@@ -41,98 +34,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setProfile(null);
-      setAddresses([]);
       return;
     }
     let cancelled = false;
-    Promise.all([getMyProfileAction(), listMyAddressesAction()]).then(([p, a]) => {
-      if (cancelled) return;
-      setProfile(p);
-      setAddresses(a);
+    getMyProfileAction().then((p) => {
+      if (!cancelled) setProfile(p);
     });
     return () => {
       cancelled = true;
     };
   }, [isAuthenticated]);
 
-  const login = useCallback<AuthContextValue["login"]>(
-    async (email, password) => {
-      const parsed = loginSchema.safeParse({ email, password });
-      if (!parsed.success) {
-        return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid details" };
-      }
-      const { error } = await getAuthClientPort().signInWithPassword(parsed.data.email, parsed.data.password);
-      if (error) {
-        if (error.code === "email_not_confirmed") {
-          return {
-            ok: false,
-            error: "Please confirm your email before logging in. Check your inbox for the confirmation link.",
-          };
-        }
-        return { ok: false, error: "Incorrect email or password." };
-      }
-      showToast("Welcome back!", "success");
-      return { ok: true };
-    },
-    [showToast]
-  );
-
-  const register = useCallback<AuthContextValue["register"]>(
-    async (profileInput, password) => {
-      const parsed = registerSchema.safeParse({
-        fullName: profileInput.fullName,
-        email: profileInput.email,
-        phone: profileInput.phone,
-        password,
-      });
-      if (!parsed.success) {
-        return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid details" };
-      }
-      const { error } = await getAuthClientPort().signUp(parsed.data.email, parsed.data.password, {
-        fullName: parsed.data.fullName,
-        phone: parsed.data.phone,
-      });
-      if (error) {
-        const message = error.message.toLowerCase().includes("already registered")
-          ? "An account with this email already exists."
-          : error.message;
-        return { ok: false, error: message };
-      }
-      showToast(`Account created. Welcome, ${parsed.data.fullName.split(" ")[0]}!`, "success");
-      return { ok: true };
-    },
-    [showToast]
-  );
-
   const logout = useCallback(() => {
     void getAuthClientPort().signOut();
     showToast("You have been logged out", "info");
   }, [showToast]);
 
-  const addAddress = useCallback((address: Address) => {
-    void createAddressAction(address).then(() => {
-      void listMyAddressesAction().then(setAddresses);
-    });
-  }, []);
-
-  const removeAddress = useCallback((addressId: string) => {
-    setAddresses((prev) => prev.filter((a) => a.id !== addressId));
-    void deleteAddressAction(addressId);
-  }, []);
-
   const value = useMemo<AuthContextValue>(
-    () => ({
-      user: profile,
-      isAuthenticated,
-      hydrated,
-      addresses,
-      login,
-      register,
-      logout,
-      addAddress,
-      removeAddress,
-    }),
-    [profile, isAuthenticated, hydrated, addresses, login, register, logout, addAddress, removeAddress]
+    () => ({ user: profile, isAuthenticated, hydrated, logout }),
+    [profile, isAuthenticated, hydrated, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

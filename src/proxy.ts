@@ -25,9 +25,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if ((pathname === "/login" || pathname === "/register") && user) {
+    return NextResponse.redirect(new URL("/account", request.url));
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*", "/login", "/register"],
 };

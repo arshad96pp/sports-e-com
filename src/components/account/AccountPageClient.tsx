@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapPin, Package, Plus, Trash2 } from "lucide-react";
+import { MapPin, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { AccountGuard } from "@/components/account/AccountGuard";
@@ -9,32 +9,23 @@ import { AccountSidebar } from "@/components/account/AccountSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StateSelect } from "@/components/common/StateSelect";
-import { getMyOrdersAction } from "@/lib/actions/order-actions";
-import type { OrderDTO } from "@/lib/services/order-service";
-import { formatPrice } from "@/lib/utils/format";
+import { createAddressAction, deleteAddressAction, listMyAddressesAction } from "@/lib/actions/address-actions";
+import type { AddressDTO } from "@/lib/services/address-service";
 import type { Address } from "@/lib/types";
 
 const EMPTY_ADDRESS: Address = { fullName: "", phone: "", line1: "", city: "", state: "", pincode: "" };
 
-const STATUS_STYLES: Record<OrderDTO["status"], string> = {
-  placed: "bg-accent-soft text-ink",
-  confirmed: "bg-surface-strong text-ink-soft",
-  processing: "bg-surface-strong text-ink-soft",
-  shipped: "bg-surface-strong text-ink-soft",
-  delivered: "bg-success-soft text-success",
-  cancelled: "bg-signal-soft text-signal",
-};
-
 function AccountContent() {
-  const { user, addresses, addAddress, removeAddress } = useAuth();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<Address>(EMPTY_ADDRESS);
-  const [orders, setOrders] = useState<OrderDTO[] | null>(null);
+  const [addresses, setAddresses] = useState<AddressDTO[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    getMyOrdersAction().then((data) => {
-      if (!cancelled) setOrders(data);
+    listMyAddressesAction().then((addresses) => {
+      if (cancelled) return;
+      setAddresses(addresses);
     });
     return () => {
       cancelled = true;
@@ -43,9 +34,18 @@ function AccountContent() {
 
   function handleAddAddress(e: React.FormEvent) {
     e.preventDefault();
-    addAddress(draft);
+    void createAddressAction(draft).then((result) => {
+      if (result.ok && result.data) {
+        setAddresses((prev) => [...prev, result.data!]);
+      }
+    });
     setDraft(EMPTY_ADDRESS);
     setShowForm(false);
+  }
+
+  function handleRemoveAddress(addressId: string) {
+    setAddresses((prev) => prev.filter((a) => a.id !== addressId));
+    void deleteAddressAction(addressId);
   }
 
   return (
@@ -77,51 +77,6 @@ function AccountContent() {
             </div>
           </section>
 
-          <section id="orders" className="rounded-xl border border-border p-5">
-            <h2 className="font-display text-lg font-bold text-ink">My Orders</h2>
-
-            {orders === null && <p className="mt-4 text-sm text-muted">Loading your orders…</p>}
-            {orders !== null && orders.length === 0 && (
-              <p className="mt-4 text-sm text-muted">You haven&apos;t placed any orders yet.</p>
-            )}
-
-            <div className="mt-4 flex flex-col gap-3">
-              {orders?.map((order) => (
-                <div key={order.id} className="rounded-lg border border-border p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <Package className="h-4 w-4 text-muted" />
-                      <span className="text-sm font-semibold text-ink">{order.orderNumber}</span>
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${STATUS_STYLES[order.status]}`}>
-                      {order.status}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted">
-                    {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                    {" · "}
-                    {order.items.length} {order.items.length === 1 ? "item" : "items"}
-                  </p>
-                  <div className="mt-3 flex flex-col gap-1 border-t border-border pt-3">
-                    {order.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs text-ink-soft">
-                        <span className="truncate">
-                          {item.productName}
-                          {item.size ? ` · ${item.size}` : ""} × {item.quantity}
-                        </span>
-                        <span className="shrink-0 font-medium text-ink">{formatPrice(item.price * item.quantity)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm font-bold text-ink">
-                    <span>Total</span>
-                    <span>{formatPrice(order.total)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
           <section id="addresses" className="rounded-xl border border-border p-5">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-bold text-ink">Saved Addresses</h2>
@@ -150,7 +105,7 @@ function AccountContent() {
                   <p className="mt-1 text-xs text-muted">{addr.phone}</p>
                   <button
                     type="button"
-                    onClick={() => removeAddress(addr.id)}
+                    onClick={() => handleRemoveAddress(addr.id)}
                     aria-label="Remove address"
                     className="absolute right-3 top-3 text-muted hover:text-signal"
                   >

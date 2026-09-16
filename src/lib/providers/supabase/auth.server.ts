@@ -1,4 +1,5 @@
 import "server-only";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthSessionPort, AuthUser, ProfileRecord } from "@/lib/core/ports/auth.port";
 
@@ -6,6 +7,15 @@ import type { AuthSessionPort, AuthUser, ProfileRecord } from "@/lib/core/ports/
 export function createSupabaseAuthSessionPort(): AuthSessionPort {
   return {
     async getAuthenticatedUser(): Promise<AuthUser | null> {
+      // On routes the proxy (middleware) covers (see lib/supabase/middleware.ts),
+      // it already called `auth.getUser()` — a real network round trip to
+      // Supabase's auth server — and forwarded the verified id via this header.
+      // Reusing it here avoids paying for that same round trip a second time
+      // in this request. Routes the proxy doesn't cover won't have the header
+      // and fall through to the real check below, so nothing loses verification.
+      const verifiedUserId = (await headers()).get("x-verified-user-id");
+      if (verifiedUserId) return { id: verifiedUserId };
+
       const supabase = await createClient();
       const {
         data: { user },

@@ -2,10 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSupabaseSession } from "@/lib/context/SupabaseSessionContext";
-import type { Product } from "@/lib/types";
 import { readStorage, writeStorage } from "@/lib/utils/storage";
 import { useToast } from "@/lib/context/ToastContext";
-import { getProductsByIdsAction } from "@/lib/actions/product-actions";
 import {
   getWishlistAction,
   mergeWishlistAction,
@@ -17,8 +15,6 @@ const STORAGE_KEY = "stryde.wishlist";
 
 interface WishlistContextValue {
   productIds: string[];
-  /** Live product data for the wishlist page — refetched whenever the id list changes. */
-  products: Product[];
   isWishlisted: (productId: string) => boolean;
   toggle: (productId: string) => void;
   remove: (productId: string) => void;
@@ -31,7 +27,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { status } = useSupabaseSession();
   const isAuthed = status === "authenticated";
   const [productIds, setProductIds] = useState<string[]>([]);
-  const [productMap, setProductMap] = useState<Record<string, Product>>({});
   const [hydrated, setHydrated] = useState(false);
   const mergedRef = useRef(false);
   const { showToast } = useToast();
@@ -71,22 +66,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     if (hydrated && !isAuthed) writeStorage(STORAGE_KEY, productIds);
   }, [productIds, hydrated, isAuthed]);
 
-  useEffect(() => {
-    if (productIds.length === 0) return;
-    let cancelled = false;
-    getProductsByIdsAction(productIds).then((fetched) => {
-      if (cancelled) return;
-      setProductMap((prev) => {
-        const next = { ...prev };
-        for (const p of fetched) next[p.id] = p;
-        return next;
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [productIds]);
-
   const isWishlisted = useCallback((productId: string) => productIds.includes(productId), [productIds]);
 
   const toggle = useCallback(
@@ -109,14 +88,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     [isAuthed]
   );
 
-  const products = useMemo(
-    () => productIds.map((id) => productMap[id]).filter((p): p is Product => Boolean(p)),
-    [productIds, productMap]
-  );
-
   const value = useMemo(
-    () => ({ productIds, products, isWishlisted, toggle, remove }),
-    [productIds, products, isWishlisted, toggle, remove]
+    () => ({ productIds, isWishlisted, toggle, remove }),
+    [productIds, isWishlisted, toggle, remove]
   );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;

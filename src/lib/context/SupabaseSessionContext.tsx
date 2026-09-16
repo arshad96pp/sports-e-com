@@ -23,22 +23,17 @@ export function SupabaseSessionProvider({ children }: { children: React.ReactNod
   const [state, setState] = useState<SupabaseSessionValue>({ status: "loading", user: null });
 
   useEffect(() => {
-    const auth = getAuthClientPort();
-    let active = true;
-
-    auth.getUser().then((user) => {
-      if (!active) return;
+    // Supabase fires this immediately on subscribe with the session already
+    // in storage (event: INITIAL_SESSION), so this one subscription both
+    // resolves the initial state and keeps listening for changes — no need
+    // for a separate `getUser()` call, which would cost a second network
+    // round trip to Supabase's auth server on every page load just to learn
+    // what this callback already tells us for free.
+    const unsubscribe = getAuthClientPort().onAuthStateChange((user) => {
       setState({ status: user ? "authenticated" : "unauthenticated", user });
     });
 
-    const unsubscribe = auth.onAuthStateChange((user) => {
-      setState({ status: user ? "authenticated" : "unauthenticated", user });
-    });
-
-    return () => {
-      active = false;
-      unsubscribe();
-    };
+    return unsubscribe;
   }, []);
 
   return <SupabaseSessionContext.Provider value={state}>{children}</SupabaseSessionContext.Provider>;

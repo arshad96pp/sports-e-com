@@ -5,15 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { STORE } from "@/lib/config";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useToast } from "@/lib/context/ToastContext";
+import { getAuthClientPort } from "@/lib/config/providers.client";
+import { loginSchema } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export function LoginPageClient() {
-  const { login } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -24,17 +26,41 @@ export function LoginPageClient() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submittingRef.current) return;
+
+    const parsed = loginSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid details");
+      return;
+    }
+
     submittingRef.current = true;
     setIsSubmitting(true);
     setError(null);
-    const result = await login(email, password);
-    if (!result.ok) {
-      setError(result.error ?? "Something went wrong");
+
+    try {
+      const { error } = await getAuthClientPort().signInWithPassword(parsed.data.email, parsed.data.password);
+      if (error) {
+        setError(
+          error.code === "email_not_confirmed"
+            ? "Please confirm your email before logging in. Check your inbox for the confirmation link."
+            : "Incorrect email or password."
+        );
+        submittingRef.current = false;
+        setIsSubmitting(false);
+        return;
+      }
+
+      showToast("Welcome back!", "success");
+      // Stop the button's loading state as soon as login succeeds — /account's own
+      // data (profile, addresses, cart, etc.) loads independently behind loading.tsx.
       submittingRef.current = false;
       setIsSubmitting(false);
-      return;
+      router.replace("/account");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
-    router.push("/account");
   }
 
   return (
@@ -43,7 +69,7 @@ export function LoginPageClient() {
         <div className="mb-8 text-center">
           <span className="font-display text-2xl font-extrabold tracking-tight text-ink">{STORE.name}</span>
           <h1 className="mt-4 font-display text-xl font-bold text-ink">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted">Log in to access your orders and wishlist</p>
+          <p className="mt-1 text-sm text-muted">Log in to access your wishlist and account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

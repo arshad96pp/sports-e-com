@@ -23,7 +23,7 @@ export async function FeaturedProducts() {
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
-      <ProductGrid products={products} />
+      <ProductGrid products={products} priority />
     </section>
   );
 }

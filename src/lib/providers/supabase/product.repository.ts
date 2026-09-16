@@ -13,19 +13,45 @@ import type {
   AdminProductListItem,
 } from "@/lib/core/ports/product.repository";
 
-// `category` uses an inner join (`!inner`) so that `.eq("category.slug", …)`
-// actually restricts which product rows come back — and therefore makes the
-// paired `count`/`range()` pagination on `queryProducts` accurate — instead of
-// PostgREST's default embed behaviour, which only filters the embedded object
-// and leaves every parent row in place. Safe to always use: every product has
-// a required (NOT NULL) category, so this never drops rows a left join would
-// have kept.
+// `category` uses an inner join (`!inner`) so a product row always carries
+// its category — every product has a required (NOT NULL) category, so this
+// never drops rows a left join would have kept.
 const PRODUCT_SELECT = `
   *,
   category:categories!inner ( slug, name ),
   subcategory:subcategories ( name ),
   product_images ( url, alt_text, sort_order )
 `;
+
+// Same as PRODUCT_SELECT minus `highlights`/`specifications` (the jsonb
+// spec blob) — those are only rendered on the product detail page
+// (`getProductBySlug`/`getProductById`), never in card/listing contexts
+// (grid cards, Quick View, cart/wishlist rows), so listing-context queries
+// use this lighter projection instead of `*`.
+const PRODUCT_LIST_SELECT = `
+  id, sku, slug, name, short_description, brand, sport, product_type,
+  price, mrp, rating, review_count, colors, sizes, description, stock,
+  is_best_seller, is_new_arrival, is_featured, is_deal_of_the_day,
+  created_at, sold_count,
+  category:categories!inner ( slug, name ),
+  subcategory:subcategories ( name ),
+  product_images ( url, alt_text, sort_order )
+`;
+
+/**
+ * Resolves a category slug to its id for exact `category_id` filtering.
+ * Filtering products by the FK column directly (instead of an embedded
+ * `category.slug` filter) is the fix for PostgREST not reliably pushing
+ * embedded-resource filters into `range()`/`limit()` — see the callers
+ * below, which used to over-fetch and re-filter in JS to work around it.
+ */
+async function resolveCategoryId(
+  supabase: ReturnType<typeof createPublicClient>,
+  slug: string
+): Promise<string | null> {
+  const { data } = await supabase.from("categories").select("id").eq("slug", slug).maybeSingle();
+  return data?.id ?? null;
+}
 
 interface ProductRow {
   id: string;
@@ -43,8 +69,9 @@ interface ProductRow {
   colors: string[];
   sizes: string[];
   description: string;
-  highlights: string[];
-  specifications: unknown;
+  // Absent when the row came from PRODUCT_LIST_SELECT (listing/card contexts).
+  highlights?: string[];
+  specifications?: unknown;
   stock: number;
   is_best_seller: boolean;
   is_new_arrival: boolean;
@@ -80,7 +107,9 @@ function toDTO(p: ProductRow): Product {
     colors: p.colors,
     sizes: p.sizes,
     description: p.description,
-    highlights: p.highlights,
+    // Omitted by PRODUCT_LIST_SELECT (listing/card contexts never render these) —
+    // fall back to empty rather than `undefined` when a row came from that projection.
+    highlights: p.highlights ?? [],
     specs: (p.specifications as unknown as ProductSpec[]) ?? [],
     images,
     inStock: p.stock > 0,
@@ -133,7 +162,7 @@ export function createSupabaseProductRepository(): ProductRepository {
     async getProductsByIds(ids: string[]): Promise<Product[]> {
       if (ids.length === 0) return [];
       const supabase = createPublicClient();
-      const { data } = await supabase.from("products").select(PRODUCT_SELECT).in("id", ids);
+      const { data } = await supabase.from("products").select(PRODUCT_LIST_SELECT).in("id", ids);
       return ((data as unknown as ProductRow[]) ?? []).map(toDTO);
     },
 
@@ -177,21 +206,35 @@ export function createSupabaseProductRepository(): ProductRepository {
 
     async getProductsByCategory(category: CategorySlug): Promise<Product[]> {
       const supabase = createPublicClient();
+      const categoryId = await resolveCategoryId(supabase, category);
+      if (!categoryId) return [];
       const { data } = await supabase
         .from("products")
-        .select(PRODUCT_SELECT)
+        .select(PRODUCT_LIST_SELECT)
         .eq("is_active", true)
-        .eq("category.slug", category)
-        .order("created_at", { ascending: false });
-      const rows = ((data as unknown as ProductRow[]) ?? []).filter((r) => r.category?.slug === category);
-      return rows.map(toDTO);
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      return ((data as unknown as ProductRow[]) ?? []).map(toDTO);
+    },
+
+    async getDealOfTheDayProducts(limit = 8): Promise<Product[]> {
+      const supabase = createPublicClient();
+      const { data } = await supabase
+        .from("products")
+        .select(PRODUCT_LIST_SELECT)
+        .eq("is_active", true)
+        .eq("is_deal_of_the_day", true)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      return ((data as unknown as ProductRow[]) ?? []).map(toDTO);
     },
 
     async getFeaturedProducts(limit = 8): Promise<Product[]> {
       const supabase = createPublicClient();
       const { data } = await supabase
         .from("products")
-        .select(PRODUCT_SELECT)
+        .select(PRODUCT_LIST_SELECT)
         .eq("is_active", true)
         .eq("is_featured", true)
         .order("rating", { ascending: false })
@@ -203,7 +246,7 @@ export function createSupabaseProductRepository(): ProductRepository {
       const supabase = createPublicClient();
       const { data } = await supabase
         .from("products")
-        .select(PRODUCT_SELECT)
+        .select(PRODUCT_LIST_SELECT)
         .eq("is_active", true)
         .eq("is_best_seller", true)
         .order("sold_count", { ascending: false })
@@ -215,7 +258,7 @@ export function createSupabaseProductRepository(): ProductRepository {
       const supabase = createPublicClient();
       const { data } = await supabase
         .from("products")
-        .select(PRODUCT_SELECT)
+        .select(PRODUCT_LIST_SELECT)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(limit);
@@ -224,16 +267,17 @@ export function createSupabaseProductRepository(): ProductRepository {
 
     async getRelatedProducts(product: Pick<Product, "id" | "category">, limit = 4): Promise<Product[]> {
       const supabase = createPublicClient();
+      const categoryId = await resolveCategoryId(supabase, product.category);
+      if (!categoryId) return [];
       const { data } = await supabase
         .from("products")
-        .select(PRODUCT_SELECT)
+        .select(PRODUCT_LIST_SELECT)
         .eq("is_active", true)
-        .eq("category.slug", product.category)
+        .eq("category_id", categoryId)
         .neq("id", product.id)
         .order("rating", { ascending: false })
-        .limit(limit * 3);
-      const rows = ((data as unknown as ProductRow[]) ?? []).filter((r) => r.category?.slug === product.category);
-      return rows.slice(0, limit).map(toDTO);
+        .limit(limit);
+      return ((data as unknown as ProductRow[]) ?? []).map(toDTO);
     },
 
     async getFrequentlyBoughtWith(
@@ -241,15 +285,20 @@ export function createSupabaseProductRepository(): ProductRepository {
       limit = 3
     ): Promise<Product[]> {
       const supabase = createPublicClient();
+      const categoryId = await resolveCategoryId(supabase, product.category);
+      if (!categoryId) return [];
+      // Excluding the same subcategory still needs a JS-side filter (we only
+      // have its name, not id, here) — category_id filtering above already
+      // narrows the candidate pool exactly, so this over-fetch is small now.
       const { data } = await supabase
         .from("products")
-        .select(PRODUCT_SELECT)
+        .select(PRODUCT_LIST_SELECT)
         .eq("is_active", true)
-        .eq("category.slug", product.category)
+        .eq("category_id", categoryId)
         .neq("id", product.id)
         .limit(limit * 4);
       const rows = ((data as unknown as ProductRow[]) ?? []).filter(
-        (r) => r.category?.slug === product.category && r.subcategory?.name !== product.subcategory
+        (r) => r.subcategory?.name !== product.subcategory
       );
       return rows.slice(0, limit).map(toDTO);
     },
@@ -261,7 +310,7 @@ export function createSupabaseProductRepository(): ProductRepository {
       const like = `%${q}%`;
       const { data } = await supabase
         .from("products")
-        .select(PRODUCT_SELECT)
+        .select(PRODUCT_LIST_SELECT)
         .eq("is_active", true)
         .or(`name.ilike.${like},brand.ilike.${like},sport.ilike.${like},product_type.ilike.${like}`)
         .limit(40);
@@ -312,12 +361,20 @@ export function createSupabaseProductRepository(): ProductRepository {
       const page = Math.max(1, params.page ?? 1);
       const pageSize = params.pageSize ?? 24;
 
+      let categoryId: string | null = null;
+      if (params.category) {
+        categoryId = await resolveCategoryId(supabase, params.category);
+        if (!categoryId) {
+          return { products: [], total: 0, page, pageSize, pageCount: 1 };
+        }
+      }
+
       let query = supabase
         .from("products")
-        .select(PRODUCT_SELECT, { count: "exact" })
+        .select(PRODUCT_LIST_SELECT, { count: "exact" })
         .eq("is_active", true);
 
-      if (params.category) query = query.eq("category.slug", params.category);
+      if (categoryId) query = query.eq("category_id", categoryId);
       if (params.search?.trim()) {
         const like = `%${params.search.trim()}%`;
         query = query.or(`name.ilike.${like},brand.ilike.${like},sport.ilike.${like},product_type.ilike.${like}`);
@@ -361,17 +418,17 @@ export function createSupabaseProductRepository(): ProductRepository {
           break;
       }
 
-      // category filter above is applied to the embedded resource, which PostgREST
-      // doesn't push down to limit/range correctly when combined with embedded
-      // filters in all versions — fetch a wide page and slice defensively.
+      // category_id (a real column) is filtered server-side above, so range()
+      // pagination against `count` is now exact for it. Subcategory is only
+      // available here as a joined name (no id to filter server-side on), so
+      // it's still applied client-side after the page is fetched — pages with
+      // a subcategory filter applied may return fewer than `pageSize` results.
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
       query = query.range(from, to);
 
       const { data, count } = await query;
-      let rows = ((data as unknown as ProductRow[]) ?? []).filter(
-        (r) => !params.category || r.category?.slug === params.category
-      );
+      let rows = (data as unknown as ProductRow[]) ?? [];
 
       if (params.subcategories?.length) {
         rows = rows.filter((r) => r.subcategory?.name && params.subcategories!.includes(r.subcategory.name));

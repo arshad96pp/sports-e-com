@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { AuthClientPort, AuthUser } from "@/lib/core/ports/auth.port";
+import type { AuthClientPort } from "@/lib/core/ports/auth.port";
 
 /**
  * Browser-side Supabase auth adapter. Deliberately has no `"server-only"`
@@ -9,12 +9,6 @@ import type { AuthClientPort, AuthUser } from "@/lib/core/ports/auth.port";
  */
 export function createSupabaseAuthClientPort(): AuthClientPort {
   return {
-    async getUser(): Promise<AuthUser | null> {
-      const supabase = createClient();
-      const { data } = await supabase.auth.getUser();
-      return data.user ? { id: data.user.id } : null;
-    },
-
     onAuthStateChange(callback) {
       const supabase = createClient();
       const {

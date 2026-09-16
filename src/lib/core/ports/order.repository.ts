@@ -56,8 +56,6 @@ export interface PlaceOrderResult {
 }
 
 export interface OrderRepository {
-  /** RLS-scoped to the caller's own rows. */
-  getMyOrders(userId: string): Promise<OrderDTO[]>;
   /**
    * Atomically validates stock, recomputes pricing server-side, writes
    * orders/order_items and decrements stock. On Supabase this is the

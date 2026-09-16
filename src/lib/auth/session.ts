@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { getAuthSessionPort } from "@/lib/config/providers";
 
 export interface CurrentUser {
@@ -14,8 +15,13 @@ export interface CurrentUser {
  * returns the caller's profile, or null if signed out. Every server action
  * and service that needs to know "who is calling" goes through this — never
  * trust a role or user id passed from the client.
+ *
+ * Wrapped in `React.cache` because a single request commonly calls this
+ * several times (e.g. a page's `requireSuperAdmin()` plus a form action's
+ * `getSuperAdminOrNull()`) — this collapses them into one auth check + one
+ * `profiles` read per request, the same pattern `getProductBySlug` uses.
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const auth = getAuthSessionPort();
   const user = await auth.getAuthenticatedUser();
   if (!user) return null;
@@ -30,7 +36,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     phone: profile.phone,
     role: profile.role,
   };
-}
+});
 
 /**
  * For customer-only server actions (cart, wishlist, addresses, checkout):

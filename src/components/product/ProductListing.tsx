@@ -90,7 +90,7 @@ export function ProductListing({
 
           {products.length > 0 ? (
             <>
-              <ProductGrid products={products} />
+              <ProductGrid products={products} priority />
               <Pagination page={page} pageCount={pageCount} onChange={setPage} />
             </>
           ) : (
