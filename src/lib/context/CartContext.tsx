@@ -1,0 +1,216 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useSupabaseSession } from "@/lib/context/SupabaseSessionContext";
+import type { CartItem, Product } from "@/lib/types";
+import { readStorage, writeStorage } from "@/lib/utils/storage";
+import { useToast } from "@/lib/context/ToastContext";
+import { getProductsByIdsAction } from "@/lib/actions/product-actions";
+import {
+  addCartItemAction,
+  clearCartAction,
+  getCartAction,
+  mergeCartAction,
+  removeCartItemAction,
+  setCartItemQuantityAction,
+} from "@/lib/actions/cart-actions";
+
+const STORAGE_KEY = "stryde.cart";
+
+export function cartKey(productId: string, size: string | null, color: string | null) {
+  return `${productId}::${size ?? "-"}::${color ?? "-"}`;
+}
+
+interface AddItemOptions {
+  quantity?: number;
+  size?: string | null;
+  color?: string | null;
+  /** Shown in the "added to cart" toast — pass `product.name` from the call site so this never needs its own product lookup. */
+  productName?: string;
+}
+
+interface CartContextValue {
+  items: CartItem[];
+  /** Live product data (price, name, image, stock) for whatever's currently in the cart — refetched from the database whenever the item list changes, never a stale local copy. */
+  products: Record<string, Product>;
+  count: number;
+  subtotal: number;
+  mrpTotal: number;
+  discount: number;
+  addItem: (productId: string, opts?: AddItemOptions) => void;
+  removeItem: (productId: string, size: string | null, color: string | null) => void;
+  updateQuantity: (productId: string, size: string | null, color: string | null, quantity: number) => void;
+  clear: () => Promise<void>;
+}
+
+const CartContext = createContext<CartContextValue | null>(null);
+
+/**
+ * Guests: cart lives entirely in localStorage.
+ * Signed-in users: cart is persisted server-side (Postgres via server actions).
+ * On login, any guest cart is merged into the account's DB cart exactly once.
+ */
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { status } = useSupabaseSession();
+  const isAuthed = status === "authenticated";
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [products, setProducts] = useState<Record<string, Product>>({});
+  const [hydrated, setHydrated] = useState(false);
+  const mergedRef = useRef(false);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (!isAuthed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setItems(readStorage(STORAGE_KEY, []));
+      setHydrated(true);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      if (!mergedRef.current) {
+        mergedRef.current = true;
+        const guestItems = readStorage<CartItem[]>(STORAGE_KEY, []);
+        if (guestItems.length > 0) {
+          await mergeCartAction(guestItems);
+          writeStorage(STORAGE_KEY, []);
+        }
+      }
+      const dbItems = await getCartAction();
+      if (!cancelled) {
+        setItems(dbItems);
+        setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [status, isAuthed]);
+
+  useEffect(() => {
+    if (hydrated && !isAuthed) writeStorage(STORAGE_KEY, items);
+  }, [items, hydrated, isAuthed]);
+
+  // Keep `products` in sync with whatever's in the cart — always the current
+  // database price/name/image, never a client-cached copy.
+  const idsKey = useMemo(() => [...new Set(items.map((i) => i.productId))].sort().join(","), [items]);
+  useEffect(() => {
+    const ids = idsKey ? idsKey.split(",") : [];
+    if (ids.length === 0) return;
+    let cancelled = false;
+    getProductsByIdsAction(ids).then((fetched) => {
+      if (cancelled) return;
+      setProducts((prev) => {
+        const next = { ...prev };
+        for (const p of fetched) next[p.id] = p;
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey]);
+
+  const addItem = useCallback<CartContextValue["addItem"]>(
+    (productId, opts) => {
+      const quantity = opts?.quantity ?? 1;
+      const size = opts?.size ?? null;
+      const color = opts?.color ?? null;
+
+      setItems((prev) => {
+        const key = cartKey(productId, size, color);
+        const existing = prev.find((i) => cartKey(i.productId, i.size, i.color) === key);
+        if (existing) {
+          return prev.map((i) =>
+            cartKey(i.productId, i.size, i.color) === key
+              ? { ...i, quantity: i.quantity + quantity }
+              : i
+          );
+        }
+        return [...prev, { productId, quantity, size, color }];
+      });
+
+      if (isAuthed) void addCartItemAction(productId, quantity, size, color);
+      showToast(`${opts?.productName ?? "Item"} added to cart`, "cart");
+    },
+    [isAuthed, showToast]
+  );
+
+  const removeItem = useCallback<CartContextValue["removeItem"]>(
+    (productId, size, color) => {
+      const key = cartKey(productId, size, color);
+      setItems((prev) => prev.filter((i) => cartKey(i.productId, i.size, i.color) !== key));
+      if (isAuthed) void removeCartItemAction(productId, size, color);
+    },
+    [isAuthed]
+  );
+
+  const updateQuantity = useCallback<CartContextValue["updateQuantity"]>(
+    (productId, size, color, quantity) => {
+      const key = cartKey(productId, size, color);
+      setItems((prev) =>
+        quantity <= 0
+          ? prev.filter((i) => cartKey(i.productId, i.size, i.color) !== key)
+          : prev.map((i) =>
+              cartKey(i.productId, i.size, i.color) === key ? { ...i, quantity } : i
+            )
+      );
+      if (isAuthed) void setCartItemQuantityAction(productId, size, color, quantity);
+    },
+    [isAuthed]
+  );
+
+  const clear = useCallback(async () => {
+    setItems([]);
+    if (isAuthed) await clearCartAction();
+  }, [isAuthed]);
+
+  const { count, subtotal, mrpTotal } = useMemo(() => {
+    let count = 0;
+    let subtotal = 0;
+    let mrpTotal = 0;
+    for (const item of items) {
+      const product = products[item.productId];
+      count += item.quantity;
+      if (!product) continue;
+      subtotal += product.price * item.quantity;
+      mrpTotal += product.mrp * item.quantity;
+    }
+    return { count, subtotal, mrpTotal };
+  }, [items, products]);
+
+  const value = useMemo<CartContextValue>(
+    () => ({
+      items,
+      products,
+      count,
+      subtotal,
+      mrpTotal,
+      discount: mrpTotal - subtotal,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clear,
+    }),
+    [items, products, count, subtotal, mrpTotal, addItem, removeItem, updateQuantity, clear]
+  );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
+
+export function useCart() {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+}
