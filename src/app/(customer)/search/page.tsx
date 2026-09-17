@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { queryProducts, getProductFilterOptions, type ProductQueryResult } from "@/lib/services/product-service";
 import { ProductListing } from "@/components/product/ProductListing";
 import { parseFiltersFromSearchParams, filtersToQueryParams, searchParamsToURLSearchParams } from "@/lib/utils/product-filter-params";
+import { STORE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Search",
-  description: "Search STRYDE's catalogue of football, cricket, tennis and multi-sport accessories.",
+  description: `Search ${STORE.name}'s catalogue of football, cricket, tennis and multi-sport accessories.`,
   alternates: { canonical: "/search" },
   robots: { index: false, follow: true },
 };

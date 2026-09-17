@@ -1,4 +1,5 @@
 import type { CategorySlug, Product, ProductSpec } from "@/lib/types";
+import { STORE } from "@/lib/config";
 
 interface ProductSeed {
   name: string;
@@ -797,7 +798,7 @@ function buildDescription(seed: ProductSeed): string {
     seed.category
   ].toLowerCase()} seriously. Built with ${
     seed.material ?? "premium materials"
-  }, it delivers dependable performance for match day, training, and everything in between — backed by STRYDE's quality promise.`;
+  }, it delivers dependable performance for match day, training, and everything in between — backed by ${STORE.name}'s quality promise.`;
 }
 
 function buildHighlights(seed: ProductSeed): string[] {
@@ -900,11 +901,3 @@ export function getRelatedProducts(product: Product, limit = 4): Product[] {
     .slice(0, limit);
 }
 
-export function getFrequentlyBoughtWith(product: Product, limit = 3): Product[] {
-  return PRODUCTS.filter(
-    (p) =>
-      p.id !== product.id &&
-      p.category === product.category &&
-      p.subcategory !== product.subcategory
-  ).slice(0, limit);
-}

@@ -1,4 +1,5 @@
 import { Award, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { STORE } from "@/lib/config";
 
 const BENEFITS = [
   {
@@ -28,7 +29,7 @@ export function WhyChooseUs() {
     <section className="container-app py-12 sm:py-16">
       <div className="mb-8">
         <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-          Why Choose STRYDE
+          Why Choose {STORE.name}
         </h2>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

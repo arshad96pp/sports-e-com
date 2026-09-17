@@ -5,12 +5,12 @@ import type { OrderDTO, OrderItemDTO, OrderLineInput, OrderStatus, PlaceOrderRes
 
 export type { OrderDTO, OrderItemDTO, OrderStatus, OrderLineInput, PlaceOrderResult };
 
-/**
- * Places the order (validates stock, recomputes pricing server-side, writes
- * orders/order_items, decrements stock — atomically, via the repository) and
- * returns the order number/total the caller needs to build a confirmation
- * message. Throws on failure; callers decide how to surface that.
- */
+
 export async function placeOrder(address: Address, lines: OrderLineInput[]): Promise<PlaceOrderResult> {
   return getOrderRepository().placeOrder(address, lines);
+}
+
+/** Whether the signed-in caller has purchased this product — gates "verified purchase" reviews. */
+export async function hasPurchasedProduct(productId: string): Promise<boolean> {
+  return getOrderRepository().hasPurchasedProduct(productId);
 }

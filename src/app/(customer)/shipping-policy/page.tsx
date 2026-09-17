@@ -1,10 +1,10 @@
 import { PolicyLayout } from "@/components/common/PolicyLayout";
-import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
+import { FREE_SHIPPING_THRESHOLD, STORE } from "@/lib/config";
 import { formatPrice } from "@/lib/utils/format";
 
 export const metadata = {
   title: "Shipping Policy",
-  description: "Delivery timelines, shipping charges and serviceable areas for STRYDE orders.",
+  description: `Delivery timelines, shipping charges and serviceable areas for ${STORE.name} orders.`,
   alternates: { canonical: "/shipping-policy" },
 };
 

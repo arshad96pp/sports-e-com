@@ -1,8 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { getAllCategories } from "@/lib/repositories/category-repository";
 import { STORE } from "@/lib/config";
 import { FacebookIcon, InstagramIcon, XIcon, YoutubeIcon } from "@/components/icons/SocialIcons";
+import logo from "@/app/dp2.webp";
 
 const SUPPORT_LINKS = [
   { label: "Contact Us", href: "/contact" },
@@ -26,7 +28,15 @@ export async function Footer() {
     <footer className="mt-16 border-t border-border bg-ink text-white">
       <div className="container-app grid grid-cols-2 gap-8 py-12 sm:grid-cols-2 md:grid-cols-4">
         <div className="col-span-2 sm:col-span-2 md:col-span-1">
-          <span className="font-display text-2xl font-extrabold tracking-tight">{STORE.name}</span>
+          <div className="relative h-10 w-36">
+            <Image
+              src={logo}
+              alt={`${STORE.name} logo`}
+              fill
+              sizes="144px"
+              className="object-cover object-center"
+            />
+          </div>
           <p className="mt-3 max-w-xs text-sm text-white/60">
             Premium sports accessories for footballers, cricketers, tennis players and everyday athletes.
           </p>

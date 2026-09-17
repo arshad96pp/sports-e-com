@@ -14,14 +14,20 @@ interface SearchProductRowProps {
   onNavigate: () => void;
 }
 
-/** Compact horizontal product card used in the search overlay's scrollable strips. */
+/** Compact product card used in the search overlay's result grids. */
 export function SearchProductRow({ product, onNavigate }: SearchProductRowProps) {
   const { addItem } = useCart();
 
   return (
-    <div className="flex w-64 shrink-0 snap-start flex-col gap-2 rounded-xl border border-border p-2.5 sm:w-60">
+    <div className="group flex flex-col gap-2 rounded-2xl border border-border p-2.5 transition-all hover:-translate-y-0.5 hover:border-ink/15 hover:shadow-lg hover:shadow-ink/5">
       <Link href={`/product/${product.slug}`} onClick={onNavigate} className="flex items-start gap-2.5">
-        <ProductPhoto product={product} className="h-16 w-16 shrink-0 rounded-lg" sizes="64px" />
+        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
+          <ProductPhoto
+            product={product}
+            className="h-16 w-16 shrink-0 transition-transform duration-300 group-hover:scale-110"
+            sizes="64px"
+          />
+        </div>
         <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted">{product.brand}</p>
           <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{product.name}</p>
@@ -36,7 +42,7 @@ export function SearchProductRow({ product, onNavigate }: SearchProductRowProps)
           size="icon-sm"
           aria-label="Add to cart"
           onClick={() => addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name })}
-          className="h-8 w-8 shrink-0 rounded-full"
+          className="h-8 w-8 shrink-0 rounded-full transition-transform hover:scale-105"
         >
           <ShoppingBag className="h-3.5 w-3.5" />
         </Button>

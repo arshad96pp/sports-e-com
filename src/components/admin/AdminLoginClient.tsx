@@ -73,7 +73,7 @@ export function AdminLoginClient() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-11 border-white/15 bg-white/5 text-white placeholder:text-white/30"
-              placeholder="admin@stryde.in"
+              placeholder="admin@enzosports.in"
             />
           </div>
           <div>

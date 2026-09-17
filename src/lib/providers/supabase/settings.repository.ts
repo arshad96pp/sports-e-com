@@ -48,14 +48,14 @@ function toDTO(s: SettingsRow): StoreSettingsDTO {
 
 const DEFAULTS = {
   id: "singleton",
-  store_name: "STRYDE",
+  store_name: "Enzo Sports",
   whatsapp_number: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919999999999",
   contact_phone: "+91 98765 43210",
-  contact_email: "support@stryde.in",
-  address_line: "STRYDE Sports, MG Road, Bengaluru, Karnataka 560001",
+  contact_email: "support@enzosports.in",
+  address_line: "Enzo Sports, MG Road, Bengaluru, Karnataka 560001",
   shipping_info: "Free delivery above ₹999. 3-5 business days across India.",
   return_policy: "7-day easy returns on unused items in original packaging.",
-  seo_default_title: "STRYDE — Gear Up. Play Better.",
+  seo_default_title: "Enzo Sports — Gear Up. Play Better.",
   seo_default_description: "Premium football, cricket, tennis and multi-sport accessories.",
 };
 

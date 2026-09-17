@@ -16,7 +16,7 @@ export default function ContactPage() {
       <p>Have a question about an order or a product? We&apos;re here to help.</p>
       <div className="mt-2 flex flex-col gap-3 not-prose">
         <a
-          href={buildWhatsAppLink("Hello, I have a question about STRYDE.", STORE_WHATSAPP_NUMBER)}
+          href={buildWhatsAppLink(`Hello, I have a question about ${STORE.name}.`, STORE_WHATSAPP_NUMBER)}
           target="_blank"
           rel="noopener noreferrer"
           className="tap-target flex items-center gap-3 rounded-xl border border-border px-4 text-sm font-medium text-ink transition-colors hover:bg-surface"

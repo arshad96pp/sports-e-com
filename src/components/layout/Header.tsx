@@ -1,7 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getAllCategories } from "@/lib/repositories/category-repository";
 import { STORE } from "@/lib/config";
 import { HeaderActions, HeaderMenuButton } from "@/components/layout/HeaderActions";
+import logo from "@/app/logo-black.webp";
 
 export async function Header() {
   const categories = await getAllCategories();
@@ -11,8 +13,15 @@ export async function Header() {
       <div className="container-app flex h-16 items-center gap-4 lg:h-18">
         <HeaderMenuButton categories={categories} />
 
-        <Link href="/" className="shrink-0 font-display text-2xl font-extrabold tracking-tight text-ink">
-          {STORE.name}
+        <Link href="/" className="relative h-12 aspect-733/772 shrink-0 lg:h-14" aria-label={STORE.name}>
+          <Image
+            src={logo}
+            alt={`${STORE.name} logo`}
+            fill
+            sizes="64px"
+            className="object-cover object-right"
+            preload
+          />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">

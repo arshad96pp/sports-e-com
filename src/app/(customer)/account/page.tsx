@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { AccountPageClient } from "@/components/account/AccountPageClient";
 import { requireNotAdmin } from "@/lib/auth/admin-guard";
+import { STORE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "My Account",
-  description: "Manage your STRYDE profile, saved addresses and account settings.",
+  description: `Manage your ${STORE.name} profile, saved addresses and account settings.`,
   robots: { index: false, follow: true },
 };
 

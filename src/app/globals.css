@@ -28,7 +28,7 @@
   --font-display: var(--font-poppins);
   --font-sans: var(--font-poppins);
 
-  /* shadcn/ui semantic tokens, mapped onto the STRYDE brand palette above
+  /* shadcn/ui semantic tokens, mapped onto the Enzo Sports brand palette above
      so every shadcn primitive (Button, Badge, Dialog, Input, ...) inherits
      the same black/white + volt-accent identity as the rest of the site. */
   --background: var(--color-paper);

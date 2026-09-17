@@ -85,12 +85,7 @@ export interface AdminProductDetail extends ProductFormValues {
   images: { id: string; url: string; altText: string; sortOrder: number }[];
 }
 
-/**
- * Everything that reads/writes the `products` domain. Business rules that
- * operate on already-fetched `Product` DTOs (e.g. "what counts as a deal",
- * discount math) live in `product-service.ts`, not here — this port only
- * covers "how do I ask the current provider for product data."
- */
+
 export interface ProductRepository {
   getProductsByIds(ids: string[]): Promise<Product[]>;
   getAllProducts(): Promise<Product[]>;
@@ -100,15 +95,9 @@ export interface ProductRepository {
   getProductsByCategory(category: CategorySlug): Promise<Product[]>;
   getFeaturedProducts(limit?: number): Promise<Product[]>;
   getBestSellers(limit?: number): Promise<Product[]>;
-  /** Active products, newest first, up to `limit` — the fallback candidate pool `getDealProducts` scans for discount-based deals once flagged deals run out. */
   getRecentProducts(limit?: number): Promise<Product[]>;
-  /** Active products explicitly flagged `is_deal_of_the_day`, newest first — the fast path `getDealProducts` prefers over scanning `getRecentProducts`. */
   getDealOfTheDayProducts(limit?: number): Promise<Product[]>;
   getRelatedProducts(product: Pick<Product, "id" | "category">, limit?: number): Promise<Product[]>;
-  getFrequentlyBoughtWith(
-    product: Pick<Product, "id" | "category" | "subcategory">,
-    limit?: number
-  ): Promise<Product[]>;
   searchProducts(query: string): Promise<Product[]>;
   getProductFilterOptions(category?: CategorySlug): Promise<ProductFilterOptions>;
   queryProducts(params: ProductQueryParams): Promise<ProductQueryResult>;

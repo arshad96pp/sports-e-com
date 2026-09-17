@@ -103,5 +103,11 @@ export function createSupabaseOrderRepository(): OrderRepository {
       const { error } = await supabase.rpc("update_order_status", { p_order_id: orderId, p_status: status });
       if (error) throw new Error(error.message);
     },
+
+    async hasPurchasedProduct(productId: string): Promise<boolean> {
+      const supabase = await createClient();
+      const { data } = await supabase.from("order_items").select("id").eq("product_id", productId).limit(1);
+      return (data ?? []).length > 0;
+    },
   };
 }

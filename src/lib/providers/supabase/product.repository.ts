@@ -280,29 +280,6 @@ export function createSupabaseProductRepository(): ProductRepository {
       return ((data as unknown as ProductRow[]) ?? []).map(toDTO);
     },
 
-    async getFrequentlyBoughtWith(
-      product: Pick<Product, "id" | "category" | "subcategory">,
-      limit = 3
-    ): Promise<Product[]> {
-      const supabase = createPublicClient();
-      const categoryId = await resolveCategoryId(supabase, product.category);
-      if (!categoryId) return [];
-      // Excluding the same subcategory still needs a JS-side filter (we only
-      // have its name, not id, here) — category_id filtering above already
-      // narrows the candidate pool exactly, so this over-fetch is small now.
-      const { data } = await supabase
-        .from("products")
-        .select(PRODUCT_LIST_SELECT)
-        .eq("is_active", true)
-        .eq("category_id", categoryId)
-        .neq("id", product.id)
-        .limit(limit * 4);
-      const rows = ((data as unknown as ProductRow[]) ?? []).filter(
-        (r) => r.subcategory?.name !== product.subcategory
-      );
-      return rows.slice(0, limit).map(toDTO);
-    },
-
     async searchProducts(query: string): Promise<Product[]> {
       const q = query.trim();
       if (!q) return [];

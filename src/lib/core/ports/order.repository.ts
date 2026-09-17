@@ -56,15 +56,11 @@ export interface PlaceOrderResult {
 }
 
 export interface OrderRepository {
-  /**
-   * Atomically validates stock, recomputes pricing server-side, writes
-   * orders/order_items and decrements stock. On Supabase this is the
-   * `create_order` RPC; a future provider must offer the same atomicity
-   * guarantee (a transaction, a Lambda, etc.), not just the same shape.
-   */
+
   placeOrder(address: Address, lines: OrderLineInput[]): Promise<PlaceOrderResult>;
 
   listOrders(): Promise<AdminOrderListItemDTO[]>;
   getOrderById(id: string): Promise<(OrderDTO & { addressPhone: string }) | null>;
   updateOrderStatus(orderId: string, status: OrderStatus): Promise<void>;
+  hasPurchasedProduct(productId: string): Promise<boolean>;
 }

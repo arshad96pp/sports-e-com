@@ -92,13 +92,6 @@ export async function getRelatedProducts(product: Pick<Product, "id" | "category
   return getProductRepository().getRelatedProducts(product, limit);
 }
 
-export async function getFrequentlyBoughtWith(
-  product: Pick<Product, "id" | "category" | "subcategory">,
-  limit = 3
-): Promise<Product[]> {
-  return getProductRepository().getFrequentlyBoughtWith(product, limit);
-}
-
 export async function searchProducts(query: string): Promise<Product[]> {
   return getProductRepository().searchProducts(query);
 }

@@ -13,14 +13,14 @@ export const STORE_WHATSAPP_NUMBER =
  * Canonical site URL used for metadata (canonical links, Open Graph, sitemap.xml,
  * robots.txt). Set NEXT_PUBLIC_SITE_URL in production deployments.
  */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.stryde.in";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.enzosports.in";
 
 export const STORE = {
-  name: "STRYDE",
+  name: "Enzo Sports",
   tagline: "Gear Up. Play Better.",
-  supportEmail: "support@stryde.in",
+  supportEmail: "support@enzosports.in",
   supportPhone: "+91 98765 43210",
-  address: "STRYDE Sports, MG Road, Bengaluru, Karnataka 560001",
+  address: "Enzo Sports, MG Road, Bengaluru, Karnataka 560001",
   social: {
     instagram: "https://instagram.com",
     facebook: "https://facebook.com",

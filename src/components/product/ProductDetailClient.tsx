@@ -6,11 +6,11 @@ import { BadgeCheck, RotateCcw, ShieldCheck, Truck, ZoomIn } from "lucide-react"
 import type { Product } from "@/lib/types";
 import { getDiscountPercent } from "@/lib/data/products";
 import type { ReviewDTO } from "@/lib/services/review-service";
+import { ProductReviewForm } from "@/components/product/ProductReviewForm";
 import { formatDate, formatPrice } from "@/lib/utils/format";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { ProductArt } from "@/components/product/ProductArt";
-import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { PriceBlock } from "@/components/ui/PriceBlock";
@@ -23,11 +23,10 @@ import { useBuyNow } from "@/lib/context/BuyNowContext";
 interface ProductDetailClientProps {
   product: Product;
   related: Product[];
-  frequentlyBoughtWith: Product[];
   reviews: ReviewDTO[];
 }
 
-export function ProductDetailClient({ product, related, frequentlyBoughtWith, reviews }: ProductDetailClientProps) {
+export function ProductDetailClient({ product, related, reviews }: ProductDetailClientProps) {
   const [activeImage, setActiveImage] = useState(0);
   const [size, setSize] = useState<string | null>(product.sizes[0] ?? null);
   const [color, setColor] = useState<string | null>(product.colors[0] ?? null);
@@ -38,7 +37,7 @@ export function ProductDetailClient({ product, related, frequentlyBoughtWith, re
   const { addItem } = useCart();
   const { openBuyNow } = useBuyNow();
   const discount = getDiscountPercent(product);
-  const [fbtSelected, setFbtSelected] = useState<string[]>(() => frequentlyBoughtWith.map((p) => p.id));
+  const [reviewList, setReviewList] = useState(reviews);
 
   const activePhoto = product.images[activeImage] ?? product.images[0];
 
@@ -63,16 +62,6 @@ export function ProductDetailClient({ product, related, frequentlyBoughtWith, re
       { clearCartAfter: false }
     );
   }
-
-  function addBundleToCart() {
-    addItem(product.id, { quantity: 1, size, color, productName: product.name });
-    frequentlyBoughtWith
-      .filter((p) => fbtSelected.includes(p.id))
-      .forEach((p) => addItem(p.id, { size: p.sizes[0] ?? null, productName: p.name }));
-  }
-
-  const bundleTotal =
-    product.price + frequentlyBoughtWith.filter((p) => fbtSelected.includes(p.id)).reduce((s, p) => s + p.price, 0);
 
   return (
     <div className="container-app py-4 sm:py-6">
@@ -276,85 +265,44 @@ export function ProductDetailClient({ product, related, frequentlyBoughtWith, re
         </dl>
       </div>
 
-      {/* Frequently bought together */}
-      {frequentlyBoughtWith.length > 0 && (
-        <div className="mt-12">
-          <h2 className="font-display text-xl font-bold text-ink">Frequently Bought Together</h2>
-          <div className="mt-4 flex flex-col gap-4 rounded-xl border border-border p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex flex-col items-center gap-1.5 text-center">
-                <ProductPhoto product={product} className="h-20 w-20 rounded-lg" sizes="80px" />
-                <span className="max-w-20 truncate text-xs font-medium text-ink">This item</span>
-              </div>
-              {frequentlyBoughtWith.map((p) => (
-                <div key={p.id} className="flex items-center gap-3">
-                  <span className="text-lg text-muted-soft">+</span>
-                  <label className="flex cursor-pointer flex-col items-center gap-1.5 text-center">
-                    <div className="relative">
-                      <ProductPhoto
-                        product={p}
-                        className={`h-20 w-20 rounded-lg ${fbtSelected.includes(p.id) ? "" : "opacity-40 grayscale"}`}
-                        sizes="80px"
-                      />
-                      <input
-                        type="checkbox"
-                        checked={fbtSelected.includes(p.id)}
-                        onChange={() =>
-                          setFbtSelected((prev) =>
-                            prev.includes(p.id) ? prev.filter((id) => id !== p.id) : [...prev, p.id]
-                          )
-                        }
-                        className="absolute -right-1 -top-1 h-4 w-4 rounded border-border-strong"
-                      />
-                    </div>
-                    <span className="max-w-20 truncate text-xs font-medium text-ink">{p.name}</span>
-                    <span className="text-xs text-muted">{formatPrice(p.price)}</span>
-                  </label>
-                </div>
-              ))}
-            </div>
-            <div className="flex shrink-0 flex-col items-start gap-2 lg:items-end">
-              <p className="text-sm text-muted">
-                Total: <span className="font-display text-lg font-bold text-ink">{formatPrice(bundleTotal)}</span>
-              </p>
-              <button
-                type="button"
-                onClick={addBundleToCart}
-                className="tap-target rounded-full bg-ink px-6 text-sm font-bold text-white"
-              >
-                Add Selected to Cart
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Reviews */}
       <div className="mt-12 max-w-3xl">
-        <h2 className="font-display text-xl font-bold text-ink">Customer Reviews</h2>
-        <div className="mt-4 flex flex-col gap-4">
-          {reviews.map((review, i) => (
-            <div key={i} className="rounded-xl border border-border p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-xs font-bold text-ink">
-                    {review.author[0]}
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{review.author}</p>
-                    {review.verified && <p className="text-[11px] text-success">Verified Purchase</p>}
-                  </div>
-                </div>
-                <span className="text-xs text-muted-soft">{formatDate(review.date)}</span>
-              </div>
-              <div className="mt-2.5">
-                <RatingStars rating={review.rating} showCount={false} />
-              </div>
-              <p className="mt-2 text-sm font-semibold text-ink">{review.title}</p>
-              <p className="mt-1 text-sm leading-relaxed text-ink-soft">{review.comment}</p>
-            </div>
-          ))}
+        {reviewList.length > 0 && (
+          <h2 className="font-display text-xl font-bold text-ink">Customer Reviews</h2>
+        )}
+
+        <div className="mt-4">
+          <ProductReviewForm
+            productId={product.id}
+            onReviewAdded={(review) => setReviewList((prev) => [review, ...prev])}
+          />
         </div>
+
+        {reviewList.length > 0 && (
+          <div className="mt-4 flex flex-col gap-4">
+            {reviewList.map((review) => (
+              <div key={review.id} className="rounded-xl border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-xs font-bold text-ink">
+                      {review.author[0]}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{review.author}</p>
+                      {review.verified && <p className="text-[11px] text-success">Verified Purchase</p>}
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-soft">{formatDate(review.date)}</span>
+                </div>
+                <div className="mt-2.5">
+                  <RatingStars rating={review.rating} showCount={false} />
+                </div>
+                <p className="mt-2 text-sm font-semibold text-ink">{review.title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{review.comment}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Related products */}

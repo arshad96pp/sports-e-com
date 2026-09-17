@@ -3,12 +3,13 @@
 import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { ArrowLeft, Clock, Search, SearchX, TrendingUp, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Clock, Search, SearchX, TrendingUp, X } from "lucide-react";
 import { useSearchState } from "@/lib/hooks/useSearchState";
 import { POPULAR_SEARCHES } from "@/lib/utils/search";
 import { SearchProductRow } from "@/components/search/SearchProductRow";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { STORE } from "@/lib/config";
 
 interface SearchOverlayProps {
   open: boolean;
@@ -52,7 +53,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-70 bg-black/70 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-70 bg-black/60 backdrop-blur-[2px] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Content
           onOpenAutoFocus={(e) => {
             e.preventDefault();
@@ -62,10 +63,10 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
         >
           <DialogPrimitive.Title className="sr-only">Search</DialogPrimitive.Title>
           <DialogPrimitive.Description className="sr-only">
-            Search STRYDE&apos;s catalogue of football, cricket, tennis and sports accessories.
+            Search {STORE.name}&apos;s catalogue of football, cricket, tennis and sports accessories.
           </DialogPrimitive.Description>
 
-          <div className="flex h-full w-full flex-col overflow-hidden bg-white sm:h-auto sm:max-h-[86vh] sm:w-full sm:max-w-215 sm:rounded-2xl sm:border sm:border-border sm:shadow-2xl">
+          <div className="flex h-full w-full flex-col overflow-hidden bg-white sm:h-auto sm:max-h-[86vh] sm:w-full sm:max-w-215 sm:rounded-3xl sm:shadow-2xl sm:ring-1 sm:ring-ink/8">
             {/* Search input row */}
             <div className="flex items-center gap-2 border-b border-border p-4 sm:gap-3 sm:p-5">
               <button
@@ -77,7 +78,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                 <ArrowLeft className="h-5 w-5" />
               </button>
 
-              <div className="flex flex-1 items-center gap-2.5 rounded-full border border-border-strong bg-surface px-4 py-2.5">
+              <div className="flex flex-1 items-center gap-2.5 rounded-2xl bg-surface px-4 py-3 ring-1 ring-transparent transition-all focus-within:bg-white focus-within:ring-2 focus-within:ring-ink/15 focus-within:shadow-sm">
                 <Search className="h-4 w-4 shrink-0 text-muted" />
                 <input
                   ref={inputRef}
@@ -88,8 +89,13 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                   className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted-soft"
                 />
                 {query && (
-                  <button type="button" onClick={() => setQuery("")} aria-label="Clear search">
-                    <X className="h-4 w-4 text-muted" />
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                    className="rounded-full p-0.5 text-muted transition-colors hover:bg-surface-strong hover:text-ink"
+                  >
+                    <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -153,7 +159,7 @@ function SearchPill({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full border border-border-strong px-3.5 py-2 text-xs font-medium text-ink-soft transition-colors hover:border-ink hover:text-ink"
+      className="flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 text-xs font-medium text-ink-soft transition-all hover:-translate-y-0.5 hover:bg-ink hover:text-white hover:shadow-md"
     >
       <Icon className="h-3 w-3" />
       {label}
@@ -162,10 +168,15 @@ function SearchPill({
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-xs font-bold uppercase tracking-wide text-muted">{children}</h3>;
+  return (
+    <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted">
+      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+      {children}
+    </h3>
+  );
 }
 
-function HorizontalProductStrip({
+function ProductGrid({
   products,
   onNavigate,
 }: {
@@ -173,7 +184,7 @@ function HorizontalProductStrip({
   onNavigate: () => void;
 }) {
   return (
-    <div className="scrollbar-hide -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {products.map((product) => (
         <SearchProductRow key={product.id} product={product} onNavigate={onNavigate} />
       ))}
@@ -206,9 +217,18 @@ function IdleState({
               Clear
             </button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-0.5">
             {recentSearches.map((term) => (
-              <SearchPill key={term} icon={Clock} label={term} onClick={() => onPick(term)} />
+              <button
+                key={term}
+                type="button"
+                onClick={() => onPick(term)}
+                className="group flex items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left text-sm text-ink-soft transition-colors hover:bg-surface hover:text-ink"
+              >
+                <Clock className="h-3.5 w-3.5 shrink-0 text-muted" />
+                <span className="flex-1">{term}</span>
+                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-soft opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
             ))}
           </div>
         </div>
@@ -226,14 +246,14 @@ function IdleState({
       <div>
         <SectionHeading>Bestsellers</SectionHeading>
         <div className="mt-3">
-          <HorizontalProductStrip products={bestSellers} onNavigate={onNavigate} />
+          <ProductGrid products={bestSellers} onNavigate={onNavigate} />
         </div>
       </div>
 
       <div>
         <SectionHeading>Curated For You</SectionHeading>
         <div className="mt-3">
-          <HorizontalProductStrip products={curatedForYou} onNavigate={onNavigate} />
+          <ProductGrid products={curatedForYou} onNavigate={onNavigate} />
         </div>
       </div>
     </div>
@@ -253,9 +273,9 @@ function LoadingState() {
       </div>
       <div>
         <Skeleton className="h-3 w-24" />
-        <div className="mt-3 flex gap-3 overflow-hidden">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex w-64 shrink-0 flex-col gap-2 rounded-xl border border-border p-2.5 sm:w-60">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2 rounded-xl border border-border p-2.5">
               <div className="flex items-start gap-2.5">
                 <Skeleton className="h-16 w-16 shrink-0 rounded-lg" />
                 <div className="flex-1 space-y-2 py-1">
@@ -301,7 +321,7 @@ function ResultsState({
                 key={c.slug}
                 type="button"
                 onClick={() => onNavigateCategory(c.slug)}
-                className="rounded-full bg-surface px-3.5 py-2 text-xs font-medium text-ink-soft transition-colors hover:bg-surface-strong hover:text-ink"
+                className="rounded-full bg-surface px-3.5 py-2 text-xs font-medium text-ink-soft transition-all hover:-translate-y-0.5 hover:bg-ink hover:text-white hover:shadow-md"
               >
                 {c.name}
               </button>
@@ -329,9 +349,15 @@ function ResultsState({
       </div>
 
       {products.length > 0 && (
-        <Button onClick={onViewAll} className="w-full rounded-full text-sm font-semibold">
-          View all results for &ldquo;{query}&rdquo;
-        </Button>
+        <div className="sticky bottom-0 -mx-4 -mb-5 border-t border-border bg-white/90 px-4 pb-5 pt-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
+          <Button
+            onClick={onViewAll}
+            className="group w-full gap-1.5 rounded-full text-sm font-semibold shadow-lg shadow-ink/10"
+          >
+            View all results for &ldquo;{query}&rdquo;
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -340,7 +366,7 @@ function ResultsState({
 function NoResultsState({ query, onPick }: { query: string; onPick: (term: string) => void }) {
   return (
     <div className="flex flex-col items-center gap-6 py-8 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-b from-surface to-surface-strong">
         <SearchX className="h-7 w-7 text-muted-soft" strokeWidth={1.5} />
       </div>
       <div>

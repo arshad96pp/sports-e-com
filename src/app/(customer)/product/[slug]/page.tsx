@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   getAllProductSlugs,
-  getFrequentlyBoughtWith,
   getProductBySlug,
   getRelatedProducts,
 } from "@/lib/repositories/product-repository";
@@ -51,9 +50,8 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const [related, frequentlyBoughtWith, reviews] = await Promise.all([
+  const [related, reviews] = await Promise.all([
     getRelatedProducts(product),
-    getFrequentlyBoughtWith(product),
     getReviewsForProduct(product.id),
   ]);
 
@@ -69,7 +67,7 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
           { name: product.name, path: `/product/${product.slug}` },
         ])}
       />
-      <ProductDetailClient product={product} related={related} frequentlyBoughtWith={frequentlyBoughtWith} reviews={reviews} />
+      <ProductDetailClient product={product} related={related} reviews={reviews} />
     </>
   );
 }

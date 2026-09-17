@@ -14,9 +14,20 @@ export interface AdminReviewDTO extends ReviewDTO {
   productName: string;
 }
 
+export interface AddReviewInput {
+  productId: string;
+  userId: string;
+  authorName: string;
+  rating: number;
+  title: string;
+  comment: string;
+  verified: boolean;
+}
+
 export interface ReviewRepository {
   getReviewsForProduct(productId: string): Promise<ReviewDTO[]>;
-  /** Admin moderation queue — every review regardless of approval state. */
+  getUserReviewForProduct(productId: string, userId: string): Promise<ReviewDTO | null>;
+  addReview(input: AddReviewInput): Promise<ReviewDTO>;
   getAllReviews(): Promise<AdminReviewDTO[]>;
   setReviewApproval(reviewId: string, isApproved: boolean): Promise<void>;
   deleteReview(reviewId: string): Promise<void>;
