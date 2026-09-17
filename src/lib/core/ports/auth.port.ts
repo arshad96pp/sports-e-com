@@ -39,11 +39,18 @@ export interface AuthClientPort {
   /** Returns an unsubscribe function. */
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void;
   signInWithPassword(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }>;
+  /**
+   * `needsEmailConfirmation` is true when Supabase created the user but withheld
+   * a session because email confirmation is required — the caller must show a
+   * "check your email" state instead of treating this as a signed-in signup.
+   */
   signUp(
     email: string,
     password: string,
-    profile: { fullName: string; phone: string }
-  ): Promise<{ error: AuthError | null }>;
+    profile: { fullName: string; phone?: string }
+  ): Promise<{ needsEmailConfirmation: boolean; error: AuthError | null }>;
   signOut(): Promise<void>;
   getProfileRole(userId: string): Promise<{ role: UserRole; isActive: boolean } | null>;
+  /** Requires an active (incl. password-recovery) session — call after the reset-password link has landed the user in one. */
+  updatePassword(newPassword: string): Promise<{ error: AuthError | null }>;
 }

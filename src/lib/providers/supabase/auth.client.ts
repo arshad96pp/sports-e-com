@@ -28,12 +28,17 @@ export function createSupabaseAuthClientPort(): AuthClientPort {
 
     async signUp(email, password, profile) {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: profile.fullName, phone: profile.phone } },
+        options: {
+          data: { full_name: profile.fullName, phone: profile.phone || null },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/account`,
+        },
       });
-      return { error: error ? { message: error.message } : null };
+      if (error) return { needsEmailConfirmation: false, error: { code: error.code, message: error.message } };
+
+      return { needsEmailConfirmation: !data.session, error: null };
     },
 
     async signOut(): Promise<void> {
@@ -46,6 +51,12 @@ export function createSupabaseAuthClientPort(): AuthClientPort {
       const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", userId).single();
       if (!profile) return null;
       return { role: profile.role, isActive: profile.is_active };
+    },
+
+    async updatePassword(newPassword) {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      return { error: error ? { code: error.code, message: error.message } : null };
     },
   };
 }

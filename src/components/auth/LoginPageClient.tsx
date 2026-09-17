@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { STORE } from "@/lib/config";
 import { useToast } from "@/lib/context/ToastContext";
 import { getAuthClientPort } from "@/lib/config/providers.client";
@@ -13,15 +13,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
+const LINK_ERROR_MESSAGES: Record<string, string> = {
+  link_expired: "That link has expired or was already used.",
+};
+
 export function LoginPageClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const callbackUrl = searchParams.get("callbackUrl");
+  const linkError = searchParams.get("error");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    linkError ? LINK_ERROR_MESSAGES[linkError] ?? "Something went wrong. Please try again." : null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
+
+  const destination = callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : "/account";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,13 +64,14 @@ export function LoginPageClient() {
       }
 
       showToast("Welcome back!", "success");
-      // Stop the button's loading state as soon as login succeeds — /account's own
-      // data (profile, addresses, cart, etc.) loads independently behind loading.tsx.
+      // Stop the button's loading state as soon as login succeeds — the
+      // destination's own data (profile, addresses, cart, etc.) loads
+      // independently behind its own loading.tsx.
       submittingRef.current = false;
       setIsSubmitting(false);
-      router.replace("/account");
+      router.replace(destination);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("Network error. Please check your connection and try again.");
       submittingRef.current = false;
       setIsSubmitting(false);
     }
@@ -72,15 +86,15 @@ export function LoginPageClient() {
           <p className="mt-1 text-sm text-muted">Log in to access your wishlist and account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
           <div>
             <Label htmlFor="login-email" className="mb-1.5 text-xs font-semibold text-ink-soft">
-              Email or Phone
+              Email
             </Label>
-
             <Input
               id="login-email"
-              type="text"
+              type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -92,19 +106,34 @@ export function LoginPageClient() {
             <Label htmlFor="login-password" className="mb-1.5 text-xs font-semibold text-ink-soft">
               Password
             </Label>
-            
-            <Input
-              id="login-password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="h-11"
-            />
+            <div className="relative">
+              <Input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-11 pr-11"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted hover:text-ink"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
-          {error && <p className="text-xs font-medium text-signal">{error}</p>}
+          {error && (
+            <p role="alert" className="text-xs font-medium text-signal">
+              {error}
+            </p>
+          )}
 
           <div className="flex items-center justify-between text-xs">
             <label className="flex items-center gap-1.5 text-muted">
@@ -116,11 +145,7 @@ export function LoginPageClient() {
             </Link>
           </div>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="mt-2 h-11 w-full rounded-full text-sm font-bold"
-          >
+          <Button type="submit" disabled={isSubmitting} className="mt-2 h-11 w-full rounded-full text-sm font-bold">
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -130,7 +155,8 @@ export function LoginPageClient() {
               "Login"
             )}
           </Button>
-          <Button asChild variant="outline" className="h-11 w-full rounded-full text-sm font-semibold">
+
+          <Button asChild variant="ghost" className="h-11 w-full rounded-full text-sm font-semibold">
             <Link href="/">Continue as Guest</Link>
           </Button>
         </form>

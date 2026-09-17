@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reset your password</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f6f6f4; font-family:Poppins,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f6f4; padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#ffffff; border-radius:16px; overflow:hidden;">
+            <tr>
+              <td style="background-color:#0a0a0a; padding:28px 32px;">
+                <span style="color:#ffffff; font-size:20px; font-weight:800; letter-spacing:-0.02em;">Enzo Sports</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:36px 32px 12px;">
+                <h1 style="margin:0 0 12px; color:#0a0a0a; font-size:20px; font-weight:700;">Reset your password</h1>
+                <p style="margin:0 0 24px; color:#6f6f6b; font-size:14px; line-height:1.6;">
+                  We received a request to reset the password for your Enzo Sports account
+                  (<strong style="color:#0a0a0a;">{{ .Email }}</strong>). Click below to choose a new one — this
+                  link is valid for a limited time and can only be used once.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 32px;">
+                <a
+                  href="{{ .ConfirmationURL }}"
+                  style="display:inline-block; width:100%; box-sizing:border-box; text-align:center; background-color:#0a0a0a; color:#ffffff; font-size:14px; font-weight:700; text-decoration:none; padding:14px 0; border-radius:999px;"
+                >
+                  Reset Password
+                </a>
+                <p style="margin:20px 0 0; color:#9a9a94; font-size:12px; line-height:1.6;">
+                  Button not working? Copy and paste this link into your browser:<br />
+                  <a href="{{ .ConfirmationURL }}" style="color:#0a0a0a; word-break:break-all;">{{ .ConfirmationURL }}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px; background-color:#f6f6f4; border-top:1px solid #e3e3df;">
+                <p style="margin:0; color:#9a9a94; font-size:12px; line-height:1.6;">
+                  If you didn&rsquo;t request a password reset, you can safely ignore this email — your
+                  password won&rsquo;t change.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:20px 0 0; color:#9a9a94; font-size:12px;">Enzo Sports &middot; Gear Up. Play Better.</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -25,6 +25,6 @@ export async function forgotPasswordAction(email: string): Promise<ActionResult>
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  await resetPasswordForEmail(parsed.data, `${siteUrl}/account`);
+  await resetPasswordForEmail(parsed.data, `${siteUrl}/auth/reset-password`);
   return { ok: true };
 }

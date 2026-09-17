@@ -12,13 +12,23 @@ import { Label } from "@/components/ui/label";
 export function ForgotPasswordClient() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     startTransition(async () => {
-      await forgotPasswordAction(email);
-      setSent(true);
+      try {
+        const result = await forgotPasswordAction(email);
+        if (!result.ok) {
+          setError(result.error ?? "Enter a valid email");
+          return;
+        }
+        setSent(true);
+      } catch {
+        setError("Network error. Please check your connection and try again.");
+      }
     });
   }
 
@@ -59,6 +69,13 @@ export function ForgotPasswordClient() {
                 className="h-11"
               />
             </div>
+
+            {error && (
+              <p role="alert" className="text-xs font-medium text-signal">
+                {error}
+              </p>
+            )}
+
             <Button type="submit" disabled={isPending} className="mt-2 h-11 w-full rounded-full text-sm font-bold">
               {isPending ? "Sending…" : "Send Reset Link"}
             </Button>
