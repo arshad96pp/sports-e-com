@@ -59,6 +59,12 @@ export function RegisterPageClient() {
         return;
       }
 
+      fetch("/api/auth/welcome-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: parsed.data.fullName, email: parsed.data.email }),
+      }).catch(() => {});
+
       if (needsEmailConfirmation) {
         setCheckEmailFor(parsed.data.email);
         return;
