@@ -1,6 +1,7 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import { PolicyLayout } from "@/components/common/PolicyLayout";
 import { WhatsAppIcon } from "@/components/icons/SportIcons";
+import { ContactForm } from "@/components/contact/ContactForm";
 import { STORE, STORE_WHATSAPP_NUMBER } from "@/lib/config";
 import { buildWhatsAppLink } from "@/lib/utils/whatsapp";
 
@@ -36,6 +37,9 @@ export default function ContactPage() {
           <MapPin className="h-5 w-5 shrink-0 text-muted" />
           {STORE.address}
         </div>
+      </div>
+      <div className="mt-6 not-prose">
+        <ContactForm />
       </div>
     </PolicyLayout>
   );
