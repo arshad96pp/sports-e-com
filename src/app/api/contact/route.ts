@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const { name, email, phone, message } = parsed.data;
+  const { name, email, subject, message } = parsed.data;
 
   if (isDuplicate(email)) {
     return NextResponse.json({ ok: false, error: DUPLICATE_ERROR }, { status: 429 });
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: GENERIC_ERROR }, { status: 500 });
   }
 
-  const notification = renderContactNotificationEmail({ name, email, phone, message });
+  const notification = renderContactNotificationEmail({ name, email, subject, message });
 
   try {
     await sendMail({

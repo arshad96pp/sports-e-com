@@ -11,12 +11,8 @@ const requiredText = () =>
 export const contactFormSchema = z.object({
   name: requiredText().pipe(z.string().min(2, "Enter your full name").max(120, "Full name is too long")),
   email: requiredText().pipe(z.string().toLowerCase().max(254).email("Enter a valid email")),
-  phone: requiredText().pipe(
-    z
-      .string()
-      .min(7, "Enter a valid phone number")
-      .max(20, "Phone number is too long")
-      .regex(/^[0-9+\-\s()]+$/, "Enter a valid phone number")
+  subject: requiredText().pipe(
+    z.string().min(2, "Enter a topic or subject").max(160, "Subject is too long")
   ),
   message: requiredText().pipe(
     z.string().min(10, "Tell us a bit more about your inquiry").max(4000, "Message is too long")

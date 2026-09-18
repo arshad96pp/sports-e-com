@@ -1,22 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/lib/context/ToastContext";
 
 const GENERIC_ERROR = "Something went wrong while sending your message. Please try again.";
 
+const fieldClass =
+  "h-10 rounded-none border-0 border-b border-border bg-transparent px-0 shadow-none focus-visible:border-ink focus-visible:ring-0";
+
+const labelClass = "mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground";
+
 interface FormState {
   name: string;
   email: string;
-  phone: string;
+  subject: string;
   message: string;
-  hp_topic: string; // honeypot — left blank by real users
+  hp_topic: string;
 }
 
-const initialState: FormState = { name: "", email: "", phone: "", message: "", hp_topic: "" };
+const initialState: FormState = { name: "", email: "", subject: "", message: "", hp_topic: "" };
 
 export function ContactForm() {
   const { showToast } = useToast();
@@ -33,8 +40,8 @@ export function ContactForm() {
     if (form.name.trim().length > 120) return "Full name is too long";
     if (!form.email.trim()) return "Enter your email address";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return "Enter a valid email address";
-    if (!form.phone.trim()) return "Enter your phone number";
-    if (!/^[0-9+\-\s()]{7,20}$/.test(form.phone.trim())) return "Enter a valid phone number";
+    if (!form.subject.trim()) return "Enter a topic or subject";
+    if (form.subject.trim().length > 160) return "Subject is too long";
     if (!form.message.trim()) return "Enter your inquiry details";
     if (form.message.trim().length < 10) return "Tell us a bit more about your inquiry";
     if (form.message.trim().length > 4000) return "Message is too long";
@@ -61,7 +68,7 @@ export function ContactForm() {
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
-          phone: form.phone.trim(),
+          subject: form.subject.trim(),
           message: form.message.trim(),
           hp_topic: form.hp_topic,
         }),
@@ -83,93 +90,100 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 rounded-xl border border-border p-4">
-      {/* Honeypot — hidden from real users, autofilled by bots. Name/label/id
-          deliberately avoid any recognized browser-autofill field (e.g.
-          "company"/"organization"), which Chrome will silently fill from a
-          saved address profile even with autocomplete=off. */}
-      <div className="absolute left-[-9999px]" aria-hidden="true">
-        <label htmlFor="contact-hp-topic">Leave this field blank</label>
-        <input
-          id="contact-hp-topic"
-          name="contact-hp-topic"
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
-          value={form.hp_topic}
-          onChange={(e) => update("hp_topic", e.target.value)}
-        />
-      </div>
+    <Card className="rounded-[1.75rem] bg-white py-10 shadow-none ring-0 sm:py-12 [--card-spacing:--spacing(10)]">
+      <CardContent>
+        <form onSubmit={handleSubmit} noValidate method="post">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink">Send a message</p>
 
-      <div>
-        <Label htmlFor="contact-name" className="mb-1.5 text-xs font-semibold text-ink-soft">
-          Full Name
-        </Label>
-        <Input
-          id="contact-name"
-          type="text"
-          value={form.name}
-          onChange={(e) => update("name", e.target.value)}
-          placeholder="Your name"
-          maxLength={120}
-          required
-        />
-      </div>
+          <div className="absolute left-[-9999px]" aria-hidden="true">
+            <Label htmlFor="contact-hp-topic">Leave this field blank</Label>
+            <Input
+              id="contact-hp-topic"
+              name="contact-hp-topic"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={form.hp_topic}
+              onChange={(e) => update("hp_topic", e.target.value)}
+            />
+          </div>
 
-      <div>
-        <Label htmlFor="contact-email" className="mb-1.5 text-xs font-semibold text-ink-soft">
-          Email Address
-        </Label>
-        <Input
-          id="contact-email"
-          type="email"
-          value={form.email}
-          onChange={(e) => update("email", e.target.value)}
-          placeholder="you@example.com"
-          maxLength={254}
-          required
-        />
-      </div>
+          <div className="mt-10 grid gap-10 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="contact-name" className={labelClass}>
+                Full name
+              </Label>
+              <Input
+                id="contact-name"
+                type="text"
+                value={form.name}
+                onChange={(e) => update("name", e.target.value)}
+                placeholder="Your name"
+                maxLength={120}
+                required
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <Label htmlFor="contact-email" className={labelClass}>
+                Email address
+              </Label>
+              <Input
+                id="contact-email"
+                type="email"
+                value={form.email}
+                onChange={(e) => update("email", e.target.value)}
+                placeholder="you@email.com"
+                maxLength={254}
+                required
+                className={fieldClass}
+              />
+            </div>
+          </div>
 
-      <div>
-        <Label htmlFor="contact-phone" className="mb-1.5 text-xs font-semibold text-ink-soft">
-          Phone Number
-        </Label>
-        <Input
-          id="contact-phone"
-          type="tel"
-          value={form.phone}
-          onChange={(e) => update("phone", e.target.value)}
-          placeholder="+91 98765 43210"
-          maxLength={20}
-          required
-        />
-      </div>
+          <div className="mt-10">
+            <Label htmlFor="contact-subject" className={labelClass}>
+              Topic / subject
+            </Label>
+            <Input
+              id="contact-subject"
+              type="text"
+              value={form.subject}
+              onChange={(e) => update("subject", e.target.value)}
+              placeholder="How can we assist you?"
+              maxLength={160}
+              required
+              className={fieldClass}
+            />
+          </div>
 
-      <div>
-        <Label htmlFor="contact-message" className="mb-1.5 text-xs font-semibold text-ink-soft">
-          Message
-        </Label>
-        <Textarea
-          id="contact-message"
-          value={form.message}
-          onChange={(e) => update("message", e.target.value)}
-          placeholder="Tell us more about your question..."
-          maxLength={4000}
-          rows={4}
-          required
-        />
-      </div>
+          <div className="mt-10">
+            <Label htmlFor="contact-message" className={labelClass}>
+              Inquiry details
+            </Label>
+            <Textarea
+              id="contact-message"
+              value={form.message}
+              onChange={(e) => update("message", e.target.value)}
+              placeholder="Please detail your request."
+              maxLength={4000}
+              rows={5}
+              required
+              className="min-h-28 resize-none rounded-none border-0 border-b border-border bg-transparent px-0 shadow-none focus-visible:border-ink focus-visible:ring-0"
+            />
+          </div>
 
-      {error && <p className="text-xs font-medium text-signal">{error}</p>}
+          {error && <p className="mt-6 text-xs font-medium text-signal">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="tap-target self-start rounded-full bg-ink px-6 text-sm font-bold text-white disabled:opacity-60"
-      >
-        {submitting ? "Sending..." : "Send Message"}
-      </button>
-    </form>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="tap-target mt-12 h-11 rounded-none px-8 text-[11px] font-semibold uppercase tracking-[0.18em]"
+          >
+            {submitting ? "Sending..." : "Send inquiry"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

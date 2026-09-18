@@ -2,45 +2,123 @@
 
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { A11y } from "swiper/modules";
+import type { Swiper as SwiperType } from "swiper";
 import type { Product } from "@/lib/types";
 import { ProductCard } from "@/components/product/ProductCard";
+import { HomeSectionHeader, ViewAllLink } from "@/components/home/HomeSectionHeader";
+import "swiper/css";
 
-export function ProductCarousel({ products }: { products: Product[] }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
+interface ProductCarouselProps {
+  products: Product[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  viewAllHref?: string;
+  viewAllLabel?: string;
+  density?: "full" | "compact";
+}
 
-  const scrollBy = (dir: 1 | -1) => {
-    scrollerRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
-  };
-
+function RailArrows({
+  onPrev,
+  onNext,
+}: {
+  onPrev: () => void;
+  onNext: () => void;
+}) {
   return (
-    <div className="relative">
-      <div
-        ref={scrollerRef}
-        className="scrollbar-hide flex snap-x gap-3 overflow-x-auto pb-2 md:gap-4"
-      >
-        {products.map((product) => (
-          <div key={product.id} className="w-[46%] shrink-0 snap-start sm:w-[32%] md:w-[23%] lg:w-[19%]">
-            <ProductCard product={product} />
-          </div>
-        ))}
-      </div>
-
+    <div className="hidden items-center gap-2 sm:flex">
       <button
         type="button"
-        aria-label="Scroll left"
-        onClick={() => scrollBy(-1)}
-        className="absolute -left-3 top-1/3 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-white shadow-md transition-transform hover:scale-105 lg:flex"
+        aria-label="Previous products"
+        onClick={onPrev}
+        className="tap-target flex items-center justify-center text-ink transition-colors duration-200 hover:bg-surface"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
       <button
         type="button"
-        aria-label="Scroll right"
-        onClick={() => scrollBy(1)}
-        className="absolute -right-3 top-1/3 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-white shadow-md transition-transform hover:scale-105 lg:flex"
+        aria-label="Next products"
+        onClick={onNext}
+        className="tap-target flex items-center justify-center text-ink transition-colors duration-200 hover:bg-surface"
       >
         <ChevronRight className="h-4 w-4" />
       </button>
+    </div>
+  );
+}
+
+export function ProductCarousel({
+  products,
+  eyebrow,
+  title,
+  description,
+  viewAllHref,
+  viewAllLabel,
+  density = "full",
+}: ProductCarouselProps) {
+  const swiperRef = useRef<SwiperType | null>(null);
+
+  const arrows = (
+    <RailArrows
+      onPrev={() => swiperRef.current?.slidePrev()}
+      onNext={() => swiperRef.current?.slideNext()}
+    />
+  );
+
+  const compact = density === "compact";
+
+  return (
+    <div>
+      {title ? (
+        <div className="mb-8">
+          <HomeSectionHeader
+            eyebrow={eyebrow}
+            title={title}
+            description={description}
+            action={
+              <div className="flex items-center gap-4">
+                {viewAllHref && <ViewAllLink href={viewAllHref} label={viewAllLabel} />}
+                {arrows}
+              </div>
+            }
+          />
+        </div>
+      ) : (
+        <div className="mb-4 flex justify-end">{arrows}</div>
+      )}
+
+      <Swiper
+        modules={[A11y]}
+        onSwiper={(s) => {
+          swiperRef.current = s;
+        }}
+        slidesPerView={1.35}
+        spaceBetween={12}
+        watchOverflow
+        grabCursor
+        breakpoints={
+          compact
+            ? {
+                620: { slidesPerView: 2.15, spaceBetween: 16 },
+                810: { slidesPerView: 2.4, spaceBetween: 16 },
+                1280: { slidesPerView: 3, spaceBetween: 20 },
+              }
+            : {
+                620: { slidesPerView: 2.2, spaceBetween: 16 },
+                810: { slidesPerView: 3, spaceBetween: 16 },
+                1280: { slidesPerView: 4, spaceBetween: 20 },
+              }
+        }
+        className="product-rail"
+      >
+        {products.map((product) => (
+          <SwiperSlide key={product.id}>
+            <ProductCard product={product} />
+          </SwiperSlide>
+        ))}
+      </Swiper>
     </div>
   );
 }

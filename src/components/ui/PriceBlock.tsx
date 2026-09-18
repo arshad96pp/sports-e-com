@@ -21,11 +21,11 @@ export function PriceBlock({ price, mrp, size = "sm", className = "", tone = "de
   const classes = SIZE_CLASSES[size];
   const isCard = tone === "card";
   return (
-    <div className={`flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 ${isCard ? "flex-nowrap" : ""} ${className}`}>
+    <div className={`flex items-baseline gap-x-1.5 gap-y-0.5 ${isCard ? "flex-nowrap" : "flex-wrap"} ${className}`}>
       <span
         className={
           isCard
-            ? "text-[15px] font-semibold leading-none tracking-tight text-ink tabular-nums"
+            ? "text-[16px] font-semibold leading-none tracking-tight text-ink tabular-nums"
             : `font-display font-bold text-ink ${classes.price}`
         }
       >
@@ -45,7 +45,7 @@ export function PriceBlock({ price, mrp, size = "sm", className = "", tone = "de
           <span
             className={
               isCard
-                ? "text-[11px] font-medium tracking-wide text-[#C4563A]"
+                ? "whitespace-nowrap text-[10px] font-medium tracking-wide text-[#C45C3A]"
                 : `font-semibold text-success ${classes.discount}`
             }
           >

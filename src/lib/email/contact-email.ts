@@ -50,10 +50,7 @@ export function renderContactConfirmationEmail({ name }: { name: string }) {
                   Thank you for contacting us.
                 </p>
                 <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#1a1a1a;">
-                  We have received your request successfully. Our team will review your message and call you shortly.
-                </p>
-                <p style="margin:0 0 4px 0;font-size:15px;line-height:1.7;color:#1a1a1a;">
-                  We will call you using the phone number you provided.
+                  We have received your request successfully. Our team will review your message and get back to you by email shortly.
                 </p>
                 <p style="margin:28px 0 0 0;font-size:15px;line-height:1.7;color:#1a1a1a;">
                   Regards,<br />
@@ -79,9 +76,7 @@ export function renderContactConfirmationEmail({ name }: { name: string }) {
 
 Thank you for contacting us.
 
-We have received your request successfully. Our team will review your message and call you shortly.
-
-We will call you using the phone number you provided.
+We have received your request successfully. Our team will review your message and get back to you by email shortly.
 
 Regards,
 ${STORE.name}`;
@@ -97,17 +92,17 @@ ${STORE.name}`;
 export function renderContactNotificationEmail({
   name,
   email,
-  phone,
+  subject,
   message,
 }: {
   name: string;
   email: string;
-  phone: string;
+  subject: string;
   message: string;
 }) {
   const safeName = escapeHtml(name);
   const safeEmail = escapeHtml(email);
-  const safePhone = escapeHtml(phone);
+  const safeSubject = escapeHtml(subject);
   const safeMessage = escapeHtml(message).replace(/\n/g, "<br />");
 
   const html = `<!DOCTYPE html>
@@ -146,8 +141,8 @@ export function renderContactNotificationEmail({
                   </tr>
                   <tr>
                     <td style="padding:0 0 16px 0;">
-                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Phone</div>
-                      <div style="font-size:15px;color:#1a1a1a;margin-top:4px;">${safePhone}</div>
+                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Subject</div>
+                      <div style="font-size:15px;color:#1a1a1a;margin-top:4px;">${safeSubject}</div>
                     </td>
                   </tr>
                   <tr>
@@ -170,7 +165,7 @@ export function renderContactNotificationEmail({
 
 Name: ${name}
 Email: ${email}
-Phone: ${phone}
+Subject: ${subject}
 
 Message:
 ${message}`;

@@ -21,12 +21,15 @@ export function RatingStars({
   const dim = size === "sm" ? "h-3 w-3" : "h-4 w-4";
 
   if (tone === "card") {
+    if (rating <= 0 && (reviewCount === undefined || reviewCount <= 0)) {
+      return null;
+    }
     return (
-      <div className={`flex min-h-5 items-center gap-1 ${className}`}>
-        <Star className="h-3 w-3 fill-[#C8A96A] text-[#C8A96A]" />
-        <span className="text-[11px] font-medium tabular-nums leading-none text-ink/70">{rating.toFixed(1)}</span>
-        {showCount && reviewCount !== undefined && (
-          <span className="text-[10px] leading-none text-[#B0B0AA]">
+      <div className={`flex items-center gap-1 ${className}`}>
+        <Star className="h-3 w-3 fill-[#C4A265] text-[#C4A265]" />
+        <span className="text-[11px] font-medium tabular-nums leading-none text-ink/75">{rating.toFixed(1)}</span>
+        {showCount && reviewCount !== undefined && reviewCount > 0 && (
+          <span className="text-[11px] leading-none text-[#A8A8A2]">
             ({reviewCount.toLocaleString("en-IN")})
           </span>
         )}

@@ -27,13 +27,13 @@ export function WishlistHeartButton({ productId, size = "sm", className = "" }: 
         toggle(productId);
       }}
       className={cn(
-        `flex ${dim} shrink-0 items-center justify-center rounded-full bg-white/90 backdrop-blur transition-transform active:scale-90`,
+        `flex ${dim} shrink-0 items-center justify-center rounded-full bg-white/90 backdrop-blur transition-transform duration-150 ease-out hover:scale-[1.05] active:scale-95`,
         className
       )}
     >
       <Heart
-        className={`${iconDim} transition-all duration-200 ${
-          active ? "scale-110 fill-signal text-signal animate-pop" : "text-ink"
+        className={`${iconDim} transition-colors duration-150 ${
+          active ? "fill-signal text-signal" : "text-ink"
         }`}
       />
     </button>

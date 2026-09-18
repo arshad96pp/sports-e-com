@@ -238,47 +238,24 @@ body {
   min-width: 44px;
 }
 
-/* Product card hover: visual transform only — layout box stays unchanged. */
-.product-card {
-  border-radius: 12px;
-  transform: translateY(0) scale(1);
-  transform-origin: center center;
-  box-shadow: 0 8px 24px rgba(17, 17, 17, 0);
-  transition:
-    transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 250ms ease;
-}
-
-.product-card:hover,
-.product-card:focus-visible {
-  z-index: 2;
-  transform: translateY(-4px) scale(1.015);
-  box-shadow: 0 12px 28px rgba(17, 17, 17, 0.08);
-}
-
-.product-card-surface {
-  transition: border-color 250ms ease;
-}
-
-.product-card:hover .product-card-surface,
-.product-card:focus-visible .product-card-surface {
-  border-color: #d0d0d0;
+/* Product card: image-only hover. Layout box never moves. */
+.product-card-image {
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .product-card {
-    transition: box-shadow 250ms ease;
-  }
-
-  .product-card:hover,
-  .product-card:focus-visible {
+  .product-card:hover .product-card-image > div,
+  .product-card:focus-visible .product-card-image > div {
     transform: none;
   }
+}
 
-  .product-card:hover img,
-  .product-card:focus-visible img {
-    transform: none;
-  }
+.product-rail .swiper-slide {
+  height: auto;
+}
+
+.product-rail .swiper-slide > * {
+  height: 100%;
 }
 
 /* Skeleton shimmer: a soft light sweep over a light-gray base, used instead

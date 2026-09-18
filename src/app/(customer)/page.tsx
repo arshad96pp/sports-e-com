@@ -3,16 +3,20 @@ import { Suspense } from "react";
 import { Hero } from "@/components/home/Hero";
 import { CategorySection } from "@/components/home/CategorySection";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
+import { HomeCampaignBanner } from "@/components/home/HomeCampaignBanner";
+import { SportCollection } from "@/components/home/SportCollection";
 import { BestSellers } from "@/components/home/BestSellers";
 import { OffersSection } from "@/components/home/OffersSection";
 import { WhyChooseUs } from "@/components/home/WhyChooseUs";
+import { HomeShopCta } from "@/components/home/HomeShopCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
 import { getActiveHeroBanners } from "@/lib/services/hero-banner-service";
 import {
   HeroSkeleton,
   CategorySectionSkeleton,
-  ProductSectionSkeleton,
+  FeaturedSectionSkeleton,
+  ProductRailSkeleton,
 } from "@/components/home/HomeSectionSkeletons";
 
 export const metadata: Metadata = {
@@ -43,19 +47,27 @@ export default function Home() {
         <CategorySection />
       </Suspense>
 
-      <Suspense fallback={<ProductSectionSkeleton count={8} />}>
+      <Suspense fallback={<FeaturedSectionSkeleton />}>
         <FeaturedProducts />
       </Suspense>
 
-      <Suspense fallback={<ProductSectionSkeleton count={6} />}>
+      <HomeCampaignBanner />
+
+      <Suspense fallback={<FeaturedSectionSkeleton />}>
+        <SportCollection />
+      </Suspense>
+
+      <Suspense fallback={<ProductRailSkeleton />}>
         <BestSellers />
       </Suspense>
 
-      <Suspense fallback={<ProductSectionSkeleton count={8} />}>
+      <Suspense fallback={<ProductRailSkeleton />}>
         <OffersSection />
       </Suspense>
 
       <WhyChooseUs />
+
+      <HomeShopCta />
     </>
   );
 }

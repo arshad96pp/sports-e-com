@@ -1,47 +1,48 @@
 import { Award, RotateCcw, ShieldCheck, Truck } from "lucide-react";
-import { STORE } from "@/lib/config";
 
 const BENEFITS = [
   {
     icon: Award,
-    title: "Quality Sports Gear",
-    description: "Every product is tested for performance and durability before it reaches you.",
+    title: "Quality gear",
+    description: "Tested for performance.",
   },
   {
     icon: ShieldCheck,
-    title: "Competitive Pricing",
-    description: "Premium gear at prices that respect your budget — no compromises.",
+    title: "Competitive pricing",
+    description: "Great gear at fair prices.",
   },
   {
     icon: Truck,
-    title: "Fast Delivery",
-    description: "Quick, reliable shipping so you're never waiting to get back in the game.",
+    title: "Fast delivery",
+    description: "To your doorstep.",
   },
   {
     icon: RotateCcw,
-    title: "Easy Returns",
-    description: "Not the right fit? Hassle-free returns within 7 days of delivery.",
+    title: "Easy returns",
+    description: "Simple return process.",
   },
 ];
 
 export function WhyChooseUs() {
   return (
-    <section className="container-app py-12 sm:py-16">
-      <div className="mb-8">
-        <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-          Why Choose {STORE.name}
-        </h2>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {BENEFITS.map((b) => (
-          <div key={b.title} className="rounded-2xl border border-border p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-ink">
-              <b.icon className="h-6 w-6 text-accent" strokeWidth={1.6} />
+    <section className="border-t border-border">
+      <div className="container-app py-10 sm:py-12">
+        <div className="flex flex-col lg:flex-row">
+          {BENEFITS.map((b, i) => (
+            <div
+              key={b.title}
+              className={`flex flex-1 items-start gap-3 py-5 lg:px-8 lg:py-1 ${
+                i > 0 ? "border-t border-border lg:border-t-0 lg:border-l" : "lg:pl-0"
+              }`}
+            >
+              <b.icon className="mt-0.5 h-4 w-4 shrink-0 text-ink" strokeWidth={1.6} />
+              <div>
+                <h3 className="text-sm font-semibold text-ink">{b.title}</h3>
+                <p className="mt-0.5 text-sm text-muted">{b.description}</p>
+              </div>
             </div>
-            <h3 className="mt-4 font-display text-base font-bold text-ink">{b.title}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted">{b.description}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
