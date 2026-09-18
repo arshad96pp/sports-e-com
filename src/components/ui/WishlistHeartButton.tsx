@@ -1,6 +1,7 @@
 "use client";
 
 import { Heart } from "lucide-react";
+import { cn } from "cn";
 import { useWishlist } from "@/lib/context/WishlistContext";
 
 interface WishlistHeartButtonProps {
@@ -25,7 +26,10 @@ export function WishlistHeartButton({ productId, size = "sm", className = "" }: 
         e.stopPropagation();
         toggle(productId);
       }}
-      className={`flex ${dim} shrink-0 items-center justify-center rounded-full bg-white/90 backdrop-blur transition-transform active:scale-90 ${className}`}
+      className={cn(
+        `flex ${dim} shrink-0 items-center justify-center rounded-full bg-white/90 backdrop-blur transition-transform active:scale-90`,
+        className
+      )}
     >
       <Heart
         className={`${iconDim} transition-all duration-200 ${

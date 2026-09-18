@@ -13,13 +13,13 @@ export async function Header() {
       <div className="container-app flex h-16 items-center gap-4 lg:h-18">
         <HeaderMenuButton categories={categories} />
 
-        <Link href="/" className="relative h-12 aspect-733/772 shrink-0 lg:h-14" aria-label={STORE.name}>
+        <Link href="/" className="relative h-12 aspect-2084/1102 shrink-0 lg:h-14" aria-label={STORE.name}>
           <Image
             src={logo}
             alt={`${STORE.name} logo`}
             fill
-            sizes="64px"
-            className="object-cover object-right"
+            sizes="112px"
+            className="object-contain object-left"
             preload
           />
         </Link>

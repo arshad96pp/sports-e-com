@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { STORE, SITE_URL } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
 });
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={cn(poppins.variable, "font-sans")}>
+    <html lang="en" data-scroll-behavior="smooth" className={cn(inter.variable, "font-sans")}>
       <body className="flex min-h-screen flex-col antialiased">{children}</body>
     </html>
   );

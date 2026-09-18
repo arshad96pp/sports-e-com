@@ -22,6 +22,8 @@ interface ProductArtProps {
   className?: string;
   variant?: number;
   iconClassName?: string;
+  /** Neutral studio treatment for product cards — no tint, stripes, or rotation. */
+  studio?: boolean;
 }
 
 const VARIANT_TRANSFORMS = [
@@ -31,9 +33,15 @@ const VARIANT_TRANSFORMS = [
   "rotate-[-3deg] scale-x-[-1]",
 ];
 
-export function ProductArt({ product, className = "", variant = 0, iconClassName = "" }: ProductArtProps) {
+export function ProductArt({
+  product,
+  className = "",
+  variant = 0,
+  iconClassName = "",
+  studio = false,
+}: ProductArtProps) {
   const hash = hashString(product.id);
-  const tint = TINTS[hash % TINTS.length];
+  const tint = studio ? "bg-[#fafafa]" : TINTS[hash % TINTS.length];
   const Icon =
     product.category === "other-accessories"
       ? OTHER_ICONS[hash % OTHER_ICONS.length]
@@ -43,17 +51,23 @@ export function ProductArt({ product, className = "", variant = 0, iconClassName
     <div
       className={`relative flex items-center justify-center overflow-hidden ${tint} ${className}`}
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(135deg, currentColor 0, currentColor 1px, transparent 1px, transparent 14px)",
-        }}
-      />
+      {!studio && (
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(135deg, currentColor 0, currentColor 1px, transparent 1px, transparent 14px)",
+          }}
+        />
+      )}
       {/* Icon is chosen per-product from a fixed set of stateless SVG icon components. */}
       {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon
-        className={`h-[42%] w-[42%] text-ink transition-transform duration-300 ease-out group-hover:scale-110 ${VARIANT_TRANSFORMS[variant % VARIANT_TRANSFORMS.length]} ${iconClassName}`}
+        className={
+          studio
+            ? `h-[42%] w-[42%] text-ink/70 transition-transform duration-200 ease-out group-hover:scale-[1.03] ${iconClassName}`
+            : `h-[42%] w-[42%] text-ink transition-transform duration-300 ease-out group-hover:scale-110 ${VARIANT_TRANSFORMS[variant % VARIANT_TRANSFORMS.length]} ${iconClassName}`
+        }
         strokeWidth={1.5}
       />
     </div>

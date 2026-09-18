@@ -1,3 +1,4 @@
+import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 
 interface DiscountBadgeProps {
@@ -10,7 +11,10 @@ export function DiscountBadge({ percent, className = "" }: DiscountBadgeProps) {
   return (
     <Badge
       variant="destructive"
-      className={`h-auto rounded-md bg-signal px-1.5 py-0.5 text-[11px] font-bold text-white ${className}`}
+      className={cn(
+        "h-auto rounded-md bg-signal px-1.5 py-0.5 text-[11px] font-bold text-white",
+        className
+      )}
     >
       {percent}% OFF
     </Badge>

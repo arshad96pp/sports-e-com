@@ -6,6 +6,8 @@ interface PriceBlockProps {
   mrp: number;
   size?: "sm" | "md" | "lg";
   className?: string;
+  /** Quieter listing hierarchy used by product cards. */
+  tone?: "default" | "card";
 }
 
 const SIZE_CLASSES = {
@@ -14,16 +16,41 @@ const SIZE_CLASSES = {
   lg: { price: "text-3xl", mrp: "text-base", discount: "text-sm" },
 };
 
-export function PriceBlock({ price, mrp, size = "sm", className = "" }: PriceBlockProps) {
+export function PriceBlock({ price, mrp, size = "sm", className = "", tone = "default" }: PriceBlockProps) {
   const discount = getDiscountPercent({ price, mrp });
   const classes = SIZE_CLASSES[size];
+  const isCard = tone === "card";
   return (
-    <div className={`flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 ${className}`}>
-      <span className={`font-display font-bold text-ink ${classes.price}`}>{formatPrice(price)}</span>
+    <div className={`flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 ${isCard ? "flex-nowrap" : ""} ${className}`}>
+      <span
+        className={
+          isCard
+            ? "text-[15px] font-semibold leading-none tracking-tight text-ink tabular-nums"
+            : `font-display font-bold text-ink ${classes.price}`
+        }
+      >
+        {formatPrice(price)}
+      </span>
       {discount > 0 && (
         <>
-          <span className={`text-muted-soft line-through ${classes.mrp}`}>{formatPrice(mrp)}</span>
-          <span className={`font-semibold text-success ${classes.discount}`}>{discount}% off</span>
+          <span
+            className={
+              isCard
+                ? "text-[11px] tabular-nums text-[#A3A39E] line-through"
+                : `text-muted-soft line-through ${classes.mrp}`
+            }
+          >
+            {formatPrice(mrp)}
+          </span>
+          <span
+            className={
+              isCard
+                ? "text-[11px] font-medium tracking-wide text-[#C4563A]"
+                : `font-semibold text-success ${classes.discount}`
+            }
+          >
+            {isCard ? `${discount}% OFF` : `${discount}% off`}
+          </span>
         </>
       )}
     </div>

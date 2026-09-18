@@ -28,7 +28,7 @@ export async function OffersSection() {
             Shop All Offers
           </Link>
         </div>
-        <div className="bg-white p-4 sm:p-6">
+        <div className="bg-white py-4 sm:py-6">
           <ProductGrid products={products} />
         </div>
       </div>
