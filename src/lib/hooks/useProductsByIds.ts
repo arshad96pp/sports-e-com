@@ -11,13 +11,18 @@ import { getProductsByIdsAction } from "@/lib/actions/product-actions";
  * consumer of cart/wishlist state (header badges, add-to-cart buttons,
  * heart toggles) only needs the id list itself, not the product data.
  */
-export function useProductsByIds(ids: string[]): Record<string, Product> {
+export function useProductsByIds(ids: string[]): { products: Record<string, Product>; loading: boolean } {
   const [products, setProducts] = useState<Record<string, Product>>({});
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const idsKey = useMemo(() => [...new Set(ids)].sort().join(","), [ids]);
 
   useEffect(() => {
     const uniqueIds = idsKey ? idsKey.split(",") : [];
-    if (uniqueIds.length === 0) return;
+    if (uniqueIds.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoadedKey(idsKey);
+      return;
+    }
     let cancelled = false;
     getProductsByIdsAction(uniqueIds).then((fetched) => {
       if (cancelled) return;
@@ -26,11 +31,18 @@ export function useProductsByIds(ids: string[]): Record<string, Product> {
         for (const p of fetched) next[p.id] = p;
         return next;
       });
+      setLoadedKey(idsKey);
     });
     return () => {
       cancelled = true;
     };
   }, [idsKey]);
 
-  return products;
+  // Derived directly from render-time state (not the effect) so the very
+  // first render after ids go from empty -> populated already reports
+  // loading=true, instead of a one-tick gap where products/loading are both
+  // stale and callers would render a false "resolved" state.
+  const loading = idsKey !== "" && loadedKey !== idsKey;
+
+  return { products, loading };
 }

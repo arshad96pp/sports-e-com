@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 export function WishlistPageClient() {
   const { productIds, remove } = useWishlist();
   const { addItem } = useCart();
-  const productMap = useProductsByIds(productIds);
+  const { products: productMap } = useProductsByIds(productIds);
   const products = productIds.map((id) => productMap[id]).filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   if (products.length === 0) {

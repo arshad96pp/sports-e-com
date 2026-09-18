@@ -31,16 +31,14 @@ export function useSearchState(open: boolean) {
   const [matchingProducts, setMatchingProducts] = useState<Product[]>([]);
   const [matchingCategories, setMatchingCategories] = useState<SearchCategoryHit[]>([]);
   const [bestSellers, setBestSellers] = useState<Product[]>([]);
-  const [curatedForYou, setCuratedForYou] = useState<Product[]>([]);
   const { recent, add: addRecentSearch, clear: clearRecentSearches } = useRecentSearches();
   const idleFetchedRef = useRef(false);
 
   useEffect(() => {
     if (!open || idleFetchedRef.current) return;
     idleFetchedRef.current = true;
-    getSearchIdleContentAction().then(({ bestSellers, curatedForYou }) => {
+    getSearchIdleContentAction().then(({ bestSellers }) => {
       setBestSellers(bestSellers);
-      setCuratedForYou(curatedForYou);
     });
   }, [open]);
 
@@ -77,7 +75,6 @@ export function useSearchState(open: boolean) {
     matchingProducts,
     matchingCategories,
     bestSellers,
-    curatedForYou,
     recentSearches: recent,
     addRecentSearch,
     clearRecentSearches,

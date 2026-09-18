@@ -2,19 +2,20 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
 import { STORE } from "@/lib/config";
 import { useToast } from "@/lib/context/ToastContext";
+import { useTransitionNavigation } from "@/lib/hooks/useTransitionNavigation";
 import { getAuthClientPort } from "@/lib/config/providers.client";
 import { registerSchema } from "@/lib/validations/auth";
+import { AccountSkeleton } from "@/components/account/AccountSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function RegisterPageClient() {
-  const router = useRouter();
   const { showToast } = useToast();
+  const { isNavigating, replace } = useTransitionNavigation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,6 +57,8 @@ export function RegisterPageClient() {
             ? "An account with this email already exists."
             : error.message
         );
+        submittingRef.current = false;
+        setIsSubmitting(false);
         return;
       }
 
@@ -66,18 +69,30 @@ export function RegisterPageClient() {
       }).catch(() => {});
 
       if (needsEmailConfirmation) {
+        // Different screen (check-email), not the form — safe to unlock.
+        submittingRef.current = false;
+        setIsSubmitting(false);
         setCheckEmailFor(parsed.data.email);
         return;
       }
 
       showToast(`Account created. Welcome, ${parsed.data.fullName.split(" ")[0]}!`, "success");
-      router.replace("/account");
+      // Intentionally left submitting/disabled — see LoginPageClient for why
+      // the form must not re-enable itself between success and navigation.
+      // The next render swaps this component's output to <AccountSkeleton />
+      // (see `isNavigating` below) instead of the form.
+      replace("/account");
     } catch {
       setError("Network error. Please check your connection and try again.");
-    } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
     }
+  }
+
+  // See LoginPageClient: swap straight to the destination's own skeleton the
+  // instant navigation starts, rather than a generic loading message.
+  if (isNavigating) {
+    return <AccountSkeleton />;
   }
 
   if (checkEmailFor) {

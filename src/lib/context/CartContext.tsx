@@ -39,6 +39,8 @@ interface AddItemOptions {
 interface CartContextValue {
   items: CartItem[];
   count: number;
+  /** False until the cart has been restored from localStorage or the DB. */
+  isInitialized: boolean;
   addItem: (productId: string, opts?: AddItemOptions) => void;
   removeItem: (productId: string, size: string | null, color: string | null) => void;
   updateQuantity: (productId: string, size: string | null, color: string | null, quantity: number) => void;
@@ -152,8 +154,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const count = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
 
   const value = useMemo<CartContextValue>(
-    () => ({ items, count, addItem, removeItem, updateQuantity, clear }),
-    [items, count, addItem, removeItem, updateQuantity, clear]
+    () => ({ items, count, isInitialized: hydrated, addItem, removeItem, updateQuantity, clear }),
+    [items, count, hydrated, addItem, removeItem, updateQuantity, clear]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

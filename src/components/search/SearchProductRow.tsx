@@ -1,52 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
-import { RatingStars } from "@/components/ui/RatingStars";
-import { PriceBlock } from "@/components/ui/PriceBlock";
-import { Button } from "@/components/ui/button";
-import { useCart } from "@/lib/context/CartContext";
+import { formatPrice } from "@/lib/utils/format";
 
 interface SearchProductRowProps {
   product: Product;
   onNavigate: () => void;
+  /** Staggers this row's entrance animation — pass the row's index in the list. */
+  index?: number;
 }
 
-/** Compact product card used in the search overlay's result grids. */
-export function SearchProductRow({ product, onNavigate }: SearchProductRowProps) {
-  const { addItem } = useCart();
+/** Dark, editorial-style result row used by the search overlay — image, brand, name, price. */
+export function SearchProductRow({ product, onNavigate, index = 0 }: SearchProductRowProps) {
+  const hasDiscount = product.mrp > product.price;
 
   return (
-    <div className="group flex flex-col gap-2 rounded-2xl border border-border p-2.5 transition-all hover:-translate-y-0.5 hover:border-ink/15 hover:shadow-lg hover:shadow-ink/5">
-      <Link href={`/product/${product.slug}`} onClick={onNavigate} className="flex items-start gap-2.5">
-        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-          <ProductPhoto
-            product={product}
-            className="h-16 w-16 shrink-0 transition-transform duration-300 group-hover:scale-110"
-            sizes="64px"
-          />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted">{product.brand}</p>
-          <p className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{product.name}</p>
-          <div className="mt-1">
-            <RatingStars rating={product.rating} showCount={false} size="sm" />
-          </div>
-        </div>
-      </Link>
-      <div className="flex items-center justify-between gap-2">
-        <PriceBlock price={product.price} mrp={product.mrp} size="sm" />
-        <Button
-          size="icon-sm"
-          aria-label="Add to cart"
-          onClick={() => addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name })}
-          className="h-8 w-8 shrink-0 rounded-full transition-transform hover:scale-105"
-        >
-          <ShoppingBag className="h-3.5 w-3.5" />
-        </Button>
+    <Link
+      href={`/product/${product.slug}`}
+      onClick={onNavigate}
+      className="group flex animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-3 transition-all duration-300 hover:border-white/10 hover:bg-white/10 sm:gap-6 sm:p-4"
+      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+    >
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg transition-transform duration-500 group-hover:scale-105 sm:h-20 sm:w-20 md:h-24 md:w-24">
+        <ProductPhoto
+          product={product}
+          className="absolute inset-0 h-full w-full"
+          imageClassName="opacity-80 transition-opacity group-hover:opacity-100"
+          sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 96px"
+        />
       </div>
-    </div>
+
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
+        <p className="mb-1 text-[10px] font-bold tracking-widest text-accent uppercase">{product.brand}</p>
+        <h3 className="truncate text-base font-light text-white sm:text-lg">{product.name}</h3>
+        <div className="mt-1.5 flex items-baseline gap-2">
+          <span className="text-sm font-semibold text-white">{formatPrice(product.price)}</span>
+          {hasDiscount && (
+            <span className="text-xs text-white/40 line-through">{formatPrice(product.mrp)}</span>
+          )}
+        </div>
+      </div>
+
+      <ArrowRight className="h-5 w-5 shrink-0 text-white/50 opacity-0 transition-opacity group-hover:opacity-100" />
+    </Link>
   );
 }

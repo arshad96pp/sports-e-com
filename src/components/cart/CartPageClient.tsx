@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, ShoppingCart, X } from "lucide-react";
 import { useCart } from "@/lib/context/CartContext";
@@ -10,14 +10,28 @@ import { useProductsByIds } from "@/lib/hooks/useProductsByIds";
 import { formatPrice } from "@/lib/utils/format";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
+import { CartSkeleton } from "@/components/cart/CartSkeleton";
 
 export function CartPageClient() {
-  const { items, updateQuantity, removeItem } = useCart();
+  const { items, isInitialized, updateQuantity, removeItem } = useCart();
   const { toggle: toggleWishlist } = useWishlist();
   const { openBuyNow } = useBuyNow();
 
   const productIds = useMemo(() => items.map((i) => i.productId), [items]);
-  const products = useProductsByIds(productIds);
+  const { products, loading: productsLoading } = useProductsByIds(productIds);
+
+  // Sticky readiness: flips true once the cart is hydrated AND its initial
+  // product data has resolved, then stays true. Using isInitialized/
+  // productsLoading directly as the render gate would also re-show the
+  // skeleton whenever a newly-added item's product data is still in
+  // flight, wiping out the cart the user is actively looking at.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (isInitialized && !productsLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReady(true);
+    }
+  }, [isInitialized, productsLoading]);
 
   const { subtotal, mrpTotal } = useMemo(() => {
     let subtotal = 0;
@@ -30,6 +44,11 @@ export function CartPageClient() {
     }
     return { subtotal, mrpTotal };
   }, [items, products]);
+
+  if (!ready) {
+    return <CartSkeleton />;
+  }
+
   const discount = mrpTotal - subtotal;
 
   const shipping = items.length === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 79;
@@ -221,7 +240,7 @@ export function CartPageClient() {
                 <div className="space-y-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => openBuyNow(checkoutLines, { clearCartAfter: true })}
+                    onClick={() => openBuyNow(checkoutLines, { clearCartAfter: true, requireAuth: true })}
                     className="flex h-14 w-full items-center justify-center rounded-full bg-ink text-[10px] font-bold tracking-widest text-white uppercase transition-colors hover:bg-ink-soft"
                   >
                     Proceed to Checkout

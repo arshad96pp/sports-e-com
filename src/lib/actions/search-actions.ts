@@ -1,6 +1,6 @@
 "use server";
 
-import { getBestSellers, getFeaturedProducts, searchProducts } from "@/lib/services/product-service";
+import { getBestSellers, searchProducts } from "@/lib/services/product-service";
 import { searchCategories } from "@/lib/services/category-service";
 import type { Product } from "@/lib/types";
 
@@ -22,11 +22,10 @@ export async function searchSuggestionsAction(query: string): Promise<SearchSugg
 
 export interface SearchIdleContent {
   bestSellers: Product[];
-  curatedForYou: Product[];
 }
 
-/** The overlay's default (no query yet) content — bestsellers + featured picks. */
+/** The overlay's default (no query yet) content — bestsellers preview. */
 export async function getSearchIdleContentAction(): Promise<SearchIdleContent> {
-  const [bestSellers, curatedForYou] = await Promise.all([getBestSellers(8), getFeaturedProducts(8)]);
-  return { bestSellers, curatedForYou };
+  const bestSellers = await getBestSellers(8);
+  return { bestSellers };
 }

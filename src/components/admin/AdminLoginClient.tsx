@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 import { getAuthClientPort } from "@/lib/config/providers.client";
+import { useTransitionNavigation } from "@/lib/hooks/useTransitionNavigation";
+import { NavigationOverlay } from "@/components/common/NavigationOverlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,17 +13,22 @@ import { STORE } from "@/lib/config";
 
 export function AdminLoginClient() {
   const router = useRouter();
+  // The dashboard has completely different chrome (sidebar shell vs. this
+  // centered card), so there's no sensible skeleton to swap to in place —
+  // unlike LoginPageClient/RegisterPageClient, this falls back to a full
+  // overlay for the transition (see NavigationOverlay).
+  const { isNavigating, startTransition } = useTransitionNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submittingRef.current) return;
     submittingRef.current = true;
-    setPending(true);
+    setIsSubmitting(true);
     setError(null);
 
     const auth = getAuthClientPort();
@@ -30,7 +37,7 @@ export function AdminLoginClient() {
     if (signInError || !user) {
       setError("Incorrect email or password.");
       submittingRef.current = false;
-      setPending(false);
+      setIsSubmitting(false);
       return;
     }
 
@@ -40,13 +47,19 @@ export function AdminLoginClient() {
       await auth.signOut();
       setError("Access denied — this account is not authorized for admin access.");
       submittingRef.current = false;
-      setPending(false);
+      setIsSubmitting(false);
       return;
     }
 
-    router.push("/admin/dashboard");
-    router.refresh();
+    // Deliberately not resetting isSubmitting/submittingRef here — the form
+    // must stay locked through the navigation, not just the sign-in call.
+    startTransition(() => {
+      router.push("/admin/dashboard");
+      router.refresh();
+    });
   }
+
+  const pending = isSubmitting || isNavigating;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
@@ -70,6 +83,7 @@ export function AdminLoginClient() {
               type="email"
               required
               autoComplete="username"
+              disabled={pending}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-11 border-white/15 bg-white/5 text-white placeholder:text-white/30"
@@ -85,6 +99,7 @@ export function AdminLoginClient() {
               type="password"
               required
               autoComplete="current-password"
+              disabled={pending}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-11 border-white/15 bg-white/5 text-white placeholder:text-white/30"
@@ -98,11 +113,13 @@ export function AdminLoginClient() {
             </p>
           )}
 
-          <Button type="submit" disabled={pending} className="mt-2 h-11 w-full rounded-full bg-accent text-sm font-bold text-accent-ink hover:bg-accent/90">
+          <Button type="submit" disabled={pending} aria-busy={pending} className="mt-2 h-11 w-full rounded-full bg-accent text-sm font-bold text-accent-ink hover:bg-accent/90">
             {pending ? "Signing in…" : "Sign In"}
           </Button>
         </form>
       </div>
+
+      <NavigationOverlay show={isNavigating} />
     </div>
   );
 }

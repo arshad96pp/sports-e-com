@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useBuyNow } from "@/lib/context/BuyNowContext";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useCart } from "@/lib/context/CartContext";
@@ -36,10 +37,11 @@ import type { Address } from "@/lib/types";
 const EMPTY_ADDRESS: Address = { fullName: "", phone: "", line1: "", city: "", state: "", pincode: "" };
 
 export function BuyNowModal() {
-  const { request, closeBuyNow } = useBuyNow();
-  const { user } = useAuth();
+  const { request, openBuyNow, closeBuyNow, pendingResume, setPendingResume } = useBuyNow();
+  const { user, isAuthenticated, hydrated } = useAuth();
   const { clear: clearCart } = useCart();
   const { showToast } = useToast();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const isMobile = useIsMobile();
 
@@ -47,21 +49,26 @@ export function BuyNowModal() {
   const [saveAddress, setSaveAddress] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof Address, boolean>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Saved addresses rarely change mid-session — cache across modal opens
-  // (Buy Now can be triggered repeatedly from a PDP or the cart) instead of
-  // refetching every time the dialog opens. Cleared back to null whenever a
-  // save fails, so the next open falls back to a fresh fetch.
+
   const addressCacheRef = useRef<AddressDTO[] | null>(null);
+  // Set just before re-opening the modal from a resumed (post-login) request,
+  // so the prefill effect below restores exactly what the guest had typed
+  // instead of overwriting it with the account's saved address.
+  const resumeAddressRef = useRef<Address | null>(null);
 
   useEffect(() => {
     if (!request) return;
-    // Reset the form each time a new buy-now request opens, then prefill
-    // from the account's saved address once it's fetched.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  
     setAddress({ ...EMPTY_ADDRESS, fullName: user?.fullName ?? "", phone: user?.phone ?? "" });
     setErrors({});
     setSubmitError(null);
     setSaveAddress(false);
+
+    if (resumeAddressRef.current) {
+      setAddress(resumeAddressRef.current);
+      resumeAddressRef.current = null;
+      return;
+    }
 
     if (addressCacheRef.current) {
       const preset = addressCacheRef.current[0];
@@ -80,6 +87,21 @@ export function BuyNowModal() {
       cancelled = true;
     };
   }, [request, user]);
+
+  // Cart's "Proceed to Checkout" gates this modal behind login (PDP's "Buy
+  // Now" doesn't — see requireAuth on BuyNowRequest). Once the guest actually
+  // signs in, this fires exactly once to put them right back where they were:
+  // same cart lines, same typed address, modal open again — no re-entering
+  // anything, no extra trip through the cart. It only reopens the form; the
+  // final "Continue to WhatsApp" click still has to happen for real (see
+  // handleConfirm) because opening a new tab requires a user gesture browsers
+  // won't let a post-redirect effect fake.
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated || !pendingResume || request) return;
+    resumeAddressRef.current = pendingResume.address;
+    openBuyNow(pendingResume.lines, { clearCartAfter: pendingResume.clearCartAfter, requireAuth: true });
+    setPendingResume(null);
+  }, [hydrated, isAuthenticated, pendingResume, request, openBuyNow, setPendingResume]);
 
   const lines = request?.lines ?? [];
   const clearCartAfter = request?.clearCartAfter ?? false;
@@ -115,6 +137,19 @@ export function BuyNowModal() {
       setErrors(nextErrors);
       return;
     }
+
+    // Auth gate for cart checkout only (PDP's "Buy Now" never sets
+    // requireAuth — see BuyNowRequest). `hydrated` guards against judging a
+    // still-loading session as logged out. The cart itself is untouched:
+    // it already lives in CartContext/localStorage independently of this
+    // modal, so nothing here can clear or reset it.
+    if (request?.requireAuth && hydrated && !isAuthenticated) {
+      setPendingResume({ lines, address, clearCartAfter });
+      closeBuyNow();
+      router.push(`/login?callbackUrl=${encodeURIComponent("/cart")}`);
+      return;
+    }
+
     setSubmitError(null);
 
     startTransition(async () => {
@@ -220,7 +255,11 @@ export function BuyNowModal() {
         className="h-10 flex-[1.4] gap-2 bg-success text-sm font-semibold text-white hover:bg-success/90"
       >
         <WhatsAppIcon className="h-4 w-4" />
-        {isPending ? "Preparing…" : "Continue to WhatsApp"}
+        {isPending
+          ? "Preparing…"
+          : request?.requireAuth && hydrated && !isAuthenticated
+            ? "Login to Continue"
+            : "Continue to WhatsApp"}
       </Button>
     </>
   );
