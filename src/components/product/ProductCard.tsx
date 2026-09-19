@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { getDiscountPercent } from "@/lib/data/products";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { PriceBlock } from "@/components/ui/PriceBlock";
+import { RatingStars } from "@/components/ui/RatingStars";
 import { WishlistHeartButton } from "@/components/ui/WishlistHeartButton";
 import { useCart } from "@/lib/context/CartContext";
 
@@ -19,9 +21,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
   return (
     <Link href={`/product/${product.slug}`} className="product-card group relative z-0 block h-full">
-      <article className="flex h-full flex-col">
+      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-[0_1px_3px_rgba(16,24,32,0.04)] transition-shadow duration-300 ease-out hover:shadow-[0_6px_20px_-10px_rgba(16,24,32,0.14)]">
         <div className="product-card-image relative aspect-square overflow-hidden bg-[#F5F5F3]">
-          <div className="absolute inset-0 transition-transform duration-300 ease-out group-hover:scale-[1.03]">
+          <div className="absolute inset-0 transition-transform duration-300 ease-out group-hover:scale-[1.04]">
             <ProductPhoto
               product={product}
               className="absolute inset-0 h-full w-full"
@@ -35,33 +37,51 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           </div>
 
           {discount > 0 && (
-            <span className="absolute left-2.5 top-2.5 z-10 rounded-sm bg-signal px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">
+            <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-signal px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">
               {discount}% OFF
             </span>
           )}
 
           <WishlistHeartButton
             productId={product.id}
-            className="absolute right-2.5 top-2.5 z-10 h-8 w-8 rounded-full border-0 bg-white shadow-none backdrop-blur-none"
+            className="absolute right-2.5 top-2.5 z-10 h-8 w-8 rounded-full border border-border/60 bg-white/95 shadow-sm backdrop-blur-none"
           />
         </div>
 
-        <div className="flex flex-1 flex-col pt-3">
-          <span className="text-[11px] text-muted">{product.brand}</span>
-          <h3 className="mt-0.5 line-clamp-2 text-sm leading-snug text-ink">{product.name}</h3>
-          <PriceBlock price={product.price} mrp={product.mrp} tone="card" className="mt-1.5" />
+        <div className="flex flex-1 flex-col gap-2 p-3.5 sm:p-4">
+          <h3 className="line-clamp-2 min-h-[2.6em] text-[13.5px] font-medium leading-snug text-ink sm:text-sm">
+            {product.name}
+          </h3>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name });
-            }}
-            className="tap-target mt-1.5 self-start text-left text-[13px] font-medium text-ink underline-offset-4 transition-colors duration-200 hover:underline group-hover:underline"
-          >
-            Add to cart
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <RatingStars rating={product.rating} tone="card" showCount={false} />
+            <span
+              className={
+                product.inStock
+                  ? "shrink-0 rounded-full bg-success-soft px-2 py-0.5 text-[9px] font-semibold tracking-wide text-success uppercase"
+                  : "shrink-0 rounded-full bg-signal-soft px-2 py-0.5 text-[9px] font-semibold tracking-wide text-signal uppercase"
+              }
+            >
+              {product.inStock ? "In Stock" : "Out of Stock"}
+            </span>
+          </div>
+
+          <div className="mt-auto flex items-end justify-between gap-3 pt-1">
+            <PriceBlock price={product.price} mrp={product.mrp} tone="card" />
+
+            <button
+              type="button"
+              aria-label={`Add ${product.name} to cart`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name });
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-white text-ink shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-border-strong hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 sm:h-10 sm:w-10"
+            >
+              <ShoppingCart className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
       </article>
     </Link>

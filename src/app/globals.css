@@ -247,11 +247,8 @@ body {
   min-width: 44px;
 }
 
-/* Product card: image-only hover. Layout box never moves. */
-.product-card-image {
-  border-radius: 4px;
-}
-
+/* Product card: image-only hover, clipped by the card's own rounded-2xl
+   border. Layout box never moves. */
 @media (prefers-reduced-motion: reduce) {
   .product-card:hover .product-card-image > div,
   .product-card:focus-visible .product-card-image > div {

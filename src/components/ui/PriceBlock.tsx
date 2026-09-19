@@ -22,36 +22,29 @@ export function PriceBlock({ price, mrp, size = "sm", className = "", tone = "de
   const isCard = tone === "card";
   return (
     <div className={`flex items-baseline gap-x-1.5 gap-y-0.5 ${isCard ? "flex-nowrap" : "flex-wrap"} ${className}`}>
+      {isCard && <span className="text-[11px] font-medium text-muted-soft">From</span>}
       <span
         className={
           isCard
-            ? "text-[16px] font-semibold leading-none tracking-tight text-ink tabular-nums"
+            ? "text-[15px] font-semibold leading-none tracking-tight text-ink tabular-nums"
             : `font-display font-bold text-ink ${classes.price}`
         }
       >
         {formatPrice(price)}
       </span>
       {discount > 0 && (
-        <>
-          <span
-            className={
-              isCard
-                ? "text-[11px] tabular-nums text-[#A3A39E] line-through"
-                : `text-muted-soft line-through ${classes.mrp}`
-            }
-          >
-            {formatPrice(mrp)}
-          </span>
-          <span
-            className={
-              isCard
-                ? "whitespace-nowrap text-[10px] font-medium tracking-wide text-[#C45C3A]"
-                : `font-semibold text-success ${classes.discount}`
-            }
-          >
-            {isCard ? `${discount}% OFF` : `${discount}% off`}
-          </span>
-        </>
+        <span
+          className={
+            isCard
+              ? "text-[12px] tabular-nums text-muted-soft line-through"
+              : `text-muted-soft line-through ${classes.mrp}`
+          }
+        >
+          {formatPrice(mrp)}
+        </span>
+      )}
+      {!isCard && discount > 0 && (
+        <span className={`font-semibold text-success ${classes.discount}`}>{discount}% off</span>
       )}
     </div>
   );

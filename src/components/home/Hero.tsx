@@ -98,7 +98,7 @@ export function Hero({ banners }: HeroProps) {
                     <span className="text-xs font-bold uppercase tracking-[0.15em] text-accent">
                       {slide.eyebrow}
                     </span>
-                    <h1 className="mt-4 font-display text-4xl font-bold leading-[1.08] tracking-tight text-accent sm:text-5xl lg:text-6xl">
+                    <h1 className="mt-4 font-display text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
                       {slide.title}
                     </h1>
                     <p className="mt-5 max-w-md text-base leading-relaxed text-white/80 sm:text-lg">
