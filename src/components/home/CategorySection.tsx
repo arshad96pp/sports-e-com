@@ -9,49 +9,50 @@ import { cn } from "cn";
 
 const TILE = [
   {
-    frame: "min-h-[300px] md:col-span-7 md:row-span-2 md:min-h-[480px] lg:min-h-[540px]",
+    frame: "min-h-[320px] md:col-span-10 md:row-span-2 md:min-h-[470px] lg:min-h-[530px]",
     title: "text-[1.75rem] sm:text-4xl lg:text-[2.75rem]",
     showCopy: true,
+    sizes: "(min-width: 768px) 42vw, 100vw",
   },
   {
-    frame: "min-h-[220px] md:col-span-5 md:min-h-[230px] lg:min-h-[260px]",
-    title: "text-xl sm:text-2xl",
+    frame: "min-h-[200px] md:col-span-7 md:min-h-[230px] lg:min-h-[260px]",
+    title: "text-lg sm:text-xl",
     showCopy: false,
+    sizes: "(min-width: 768px) 29vw, 50vw",
   },
   {
-    frame: "min-h-[220px] md:col-span-5 md:min-h-[230px] lg:min-h-[260px]",
-    title: "text-xl sm:text-2xl",
+    frame: "min-h-[200px] md:col-span-7 md:min-h-[230px] lg:min-h-[260px]",
+    title: "text-lg sm:text-xl",
     showCopy: false,
+    sizes: "(min-width: 768px) 29vw, 50vw",
   },
   {
-    frame: "min-h-[200px] md:col-span-12 lg:min-h-[240px]",
-    title: "text-xl sm:text-2xl lg:text-3xl",
+    frame: "min-h-[200px] md:col-span-14 md:min-h-[230px] lg:min-h-[260px]",
+    title: "text-xl sm:text-2xl",
     showCopy: true,
+    sizes: "(min-width: 768px) 58vw, 100vw",
   },
 ] as const;
 
 function CategoryTile({ cat, index }: { cat: CategoryDTO; index: number }) {
   const visual = TILE[index % TILE.length];
-  const src = categoryImageSrc(cat.slug);
+  const src = cat.imageUrl || categoryImageSrc(cat.slug);
   const Icon = categoryIcon(cat.slug);
 
   return (
     <Link
       href={`/category/${cat.slug}`}
-      className={cn("group relative flex flex-col justify-end overflow-hidden", visual.frame)}
+      className={cn(
+        "group relative flex flex-col justify-end overflow-hidden rounded-3xl",
+        visual.frame
+      )}
     >
       {src ? (
         <Image
           src={src}
           alt=""
           fill
-          sizes={
-            index === 0
-              ? "(min-width: 768px) 58vw, 100vw"
-              : index === 3
-                ? "100vw"
-                : "(min-width: 768px) 42vw, 100vw"
-          }
+          sizes={visual.sizes}
           className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
         />
       ) : (
@@ -100,7 +101,7 @@ export async function CategorySection() {
       </div>
 
       <div className="container-app mt-6 sm:mt-8">
-        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-12">
+        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-24">
           {ordered.map((cat, i) => (
             <CategoryTile key={cat.slug} cat={cat} index={i} />
           ))}

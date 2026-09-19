@@ -141,13 +141,6 @@ export function Hero({ banners }: HeroProps) {
         })}
       </Swiper>
 
-      {/*
-        Pagination (left) and nav arrows (right) share one bottom row, both
-        anchored inside `container-app` — same left edge as the hero text,
-        and both fixed to the bottom regardless of how tall a slide's copy
-        happens to be, so neither ever sits on top of the body text.
-        Skipped entirely for a single banner — nothing to navigate to.
-      */}
       {!isSingleSlide && (
         <div className="container-app pointer-events-none absolute inset-x-0 bottom-5 z-10 flex items-center justify-between sm:bottom-6">
           <div className="pointer-events-auto flex items-center gap-2">

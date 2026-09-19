@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import { useBuyNow } from "@/lib/context/BuyNowContext";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useCart } from "@/lib/context/CartContext";
@@ -12,20 +13,8 @@ import { createAddressAction, listMyAddressesAction } from "@/lib/actions/addres
 import type { AddressDTO } from "@/lib/services/address-service";
 import { formatPrice } from "@/lib/utils/format";
 import { WhatsAppIcon } from "@/components/icons/SportIcons";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetClose, SheetContent, SheetFooter, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +22,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { StateSelect } from "@/components/common/StateSelect";
 import { useIsMobile } from "@/lib/hooks/useIsMobile";
 import type { Address } from "@/lib/types";
+
+const FIELD_INPUT_CLASS =
+  "h-11 rounded-xl border-border bg-white px-3.5 text-sm text-ink placeholder:text-muted-soft focus-visible:border-ink focus-visible:ring-0";
 
 const EMPTY_ADDRESS: Address = { fullName: "", phone: "", line1: "", city: "", state: "", pincode: "" };
 
@@ -51,9 +43,6 @@ export function BuyNowModal() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const addressCacheRef = useRef<AddressDTO[] | null>(null);
-  // Set just before re-opening the modal from a resumed (post-login) request,
-  // so the prefill effect below restores exactly what the guest had typed
-  // instead of overwriting it with the account's saved address.
   const resumeAddressRef = useRef<Address | null>(null);
 
   useEffect(() => {
@@ -88,14 +77,6 @@ export function BuyNowModal() {
     };
   }, [request, user]);
 
-  // Cart's "Proceed to Checkout" gates this modal behind login (PDP's "Buy
-  // Now" doesn't — see requireAuth on BuyNowRequest). Once the guest actually
-  // signs in, this fires exactly once to put them right back where they were:
-  // same cart lines, same typed address, modal open again — no re-entering
-  // anything, no extra trip through the cart. It only reopens the form; the
-  // final "Continue to WhatsApp" click still has to happen for real (see
-  // handleConfirm) because opening a new tab requires a user gesture browsers
-  // won't let a post-redirect effect fake.
   useEffect(() => {
     if (!hydrated || !isAuthenticated || !pendingResume || request) return;
     resumeAddressRef.current = pendingResume.address;
@@ -111,7 +92,10 @@ export function BuyNowModal() {
   function field(key: keyof Address, label: string, placeholder: string, type = "text") {
     return (
       <div>
-        <Label htmlFor={`buynow-${key}`} className="mb-1.5 text-xs font-semibold text-ink-soft">
+        <Label
+          htmlFor={`buynow-${key}`}
+          className="mb-1.5 text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase"
+        >
           {label}
         </Label>
         <Input
@@ -121,7 +105,7 @@ export function BuyNowModal() {
           onChange={(e) => setAddress((a) => ({ ...a, [key]: e.target.value }))}
           placeholder={placeholder}
           aria-invalid={errors[key] ? true : undefined}
-          className="h-10"
+          className={FIELD_INPUT_CLASS}
         />
       </div>
     );
@@ -138,11 +122,6 @@ export function BuyNowModal() {
       return;
     }
 
-    // Auth gate for cart checkout only (PDP's "Buy Now" never sets
-    // requireAuth — see BuyNowRequest). `hydrated` guards against judging a
-    // still-loading session as logged out. The cart itself is untouched:
-    // it already lives in CartContext/localStorage independently of this
-    // modal, so nothing here can clear or reset it.
     if (request?.requireAuth && hydrated && !isAuthenticated) {
       setPendingResume({ lines, address, clearCartAfter });
       closeBuyNow();
@@ -169,8 +148,6 @@ export function BuyNowModal() {
           }
         });
       }
-      // Fire-and-forget: clearing the cart doesn't affect the WhatsApp
-      // message that's about to open, so don't make the user wait on it.
       if (clearCartAfter) void clearCart();
 
       window.open(result.whatsappUrl, "_blank", "noopener,noreferrer");
@@ -179,62 +156,91 @@ export function BuyNowModal() {
     });
   }
 
+  const continueLabel = isPending
+    ? "Preparing…"
+    : request?.requireAuth && hydrated && !isAuthenticated
+      ? "Login to Continue"
+      : "Continue to WhatsApp";
+
   const body = (
-    <div className="flex-1 overflow-y-auto px-5 py-4">
-      <div className="flex flex-col gap-3 border-b border-border pb-4">
+    <div className="scrollbar-thin flex-1 overflow-y-auto px-6 py-5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong [&::-webkit-scrollbar-track]:bg-transparent">
+      <div
+        className={
+          lines.length > 3
+            ? "scrollbar-thin max-h-44 space-y-3 overflow-y-auto pr-1"
+            : "space-y-3"
+        }
+      >
         {lines.map((line, i) => (
-          <div key={i} className="flex items-start gap-3">
-            {line.imageUrl && (
-              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md border border-border bg-white">
-                <Image src={line.imageUrl} alt={line.name} fill sizes="44px" className="object-cover" />
-              </div>
-            )}
+          <div key={i} className="flex items-center gap-3">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border bg-surface">
+              {line.imageUrl && (
+                <Image src={line.imageUrl} alt={line.name} fill sizes="48px" className="object-cover" />
+              )}
+            </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="truncate text-sm font-medium text-ink">{line.name}</p>
-                <span className="shrink-0 text-sm text-ink">{formatPrice(line.price * line.quantity)}</span>
-              </div>
+              <p className="truncate text-sm font-medium text-ink">{line.name}</p>
               <p className="mt-0.5 text-xs text-muted">
                 Qty: {line.quantity}
                 {line.size ? ` · Size: ${line.size}` : ""}
               </p>
             </div>
+            <span className="shrink-0 text-sm font-medium text-ink">
+              {formatPrice(line.price * line.quantity)}
+            </span>
           </div>
         ))}
-        <div className="flex items-center justify-between pt-1 text-sm font-semibold text-ink">
-          <span>Total ({totalQuantity} {totalQuantity === 1 ? "item" : "items"})</span>
-          <span>{formatPrice(total)}</span>
-        </div>
       </div>
 
-      <div className="mt-4">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Delivery Details</h3>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
+        <span className="text-sm font-semibold text-ink">
+          Total <span className="font-normal text-muted">({totalQuantity} {totalQuantity === 1 ? "item" : "items"})</span>
+        </span>
+        <span className="text-lg font-semibold text-ink">{formatPrice(total)}</span>
+      </div>
+
+      <div className="mt-6 border-t border-border pt-6">
+        <h3 className="mb-4 text-[10.5px] font-semibold tracking-[0.12em] text-muted uppercase">
+          Delivery Details
+        </h3>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {field("fullName", "Full Name", "Your name")}
           {field("phone", "Phone Number", "+91 98765 43210", "tel")}
           <div className="sm:col-span-2">{field("line1", "Address", "House no., street, area")}</div>
           {field("city", "City", "City")}
           <div>
-            <Label htmlFor="buynow-state" className="mb-1.5 text-xs font-semibold text-ink-soft">
+            <Label
+              htmlFor="buynow-state"
+              className="mb-1.5 text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase"
+            >
               State
             </Label>
-            <StateSelect id="buynow-state" value={address.state} onChange={(v) => setAddress((a) => ({ ...a, state: v }))} />
+            <StateSelect
+              id="buynow-state"
+              value={address.state}
+              onChange={(v) => setAddress((a) => ({ ...a, state: v }))}
+              className={FIELD_INPUT_CLASS}
+            />
           </div>
           <div className="sm:col-span-2">{field("pincode", "Pincode", "560001")}</div>
         </div>
-        <label className="mt-3 flex items-center gap-2 text-xs text-muted">
-          <Checkbox checked={saveAddress} onCheckedChange={(c) => setSaveAddress(c === true)} />
+        <label className="mt-4 flex items-center gap-2.5 text-xs text-muted">
+          <Checkbox
+            checked={saveAddress}
+            onCheckedChange={(c) => setSaveAddress(c === true)}
+            className="size-4 rounded-[5px] border-border-strong"
+          />
           Save this address for next time
         </label>
       </div>
 
       {submitError && (
-        <p className="mt-4 rounded-md bg-signal-soft px-3 py-2 text-xs font-medium text-signal">
+        <p className="mt-4 rounded-xl bg-signal-soft px-3.5 py-2.5 text-xs font-medium text-signal">
           {submitError}
         </p>
       )}
 
-      <div className="mt-4 flex items-start gap-2 border-t border-border pt-3.5 text-xs leading-relaxed text-muted">
+      <div className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-xs leading-relaxed text-muted">
         <WhatsAppIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
         <p>
           This sends an order request to the store owner via WhatsApp. It does not place or confirm your
@@ -246,20 +252,21 @@ export function BuyNowModal() {
 
   const footerButtons = (
     <>
-      <Button variant="outline" onClick={closeBuyNow} disabled={isPending} className="h-10 flex-1 text-sm font-medium">
+      <Button
+        variant="outline"
+        onClick={closeBuyNow}
+        disabled={isPending}
+        className="h-12 flex-1 rounded-full border-border text-sm font-semibold text-ink hover:bg-surface"
+      >
         Back to Cart
       </Button>
       <Button
         onClick={handleConfirm}
         disabled={isPending}
-        className="h-10 flex-[1.4] gap-2 bg-success text-sm font-semibold text-white hover:bg-success/90"
+        className="h-12 flex-[1.4] gap-2 rounded-full bg-ink text-sm font-semibold text-white hover:bg-ink-soft"
       >
-        <WhatsAppIcon className="h-4 w-4" />
-        {isPending
-          ? "Preparing…"
-          : request?.requireAuth && hydrated && !isAuthenticated
-            ? "Login to Continue"
-            : "Continue to WhatsApp"}
+        <WhatsAppIcon className="h-4 w-4 text-success" />
+        {continueLabel}
       </Button>
     </>
   );
@@ -267,14 +274,29 @@ export function BuyNowModal() {
   if (isMobile) {
     return (
       <Sheet open={!!request} onOpenChange={(next) => !next && closeBuyNow()}>
-        <SheetContent side="bottom" className="flex max-h-[90vh] flex-col gap-0 rounded-t-xl p-0">
-          <SheetHeader className="border-b border-border px-5 py-3.5">
-            <SheetTitle className="font-display text-base font-semibold text-ink">Order Summary</SheetTitle>
-          </SheetHeader>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="flex max-h-[90vh] flex-col gap-0 rounded-t-3xl border-t border-border bg-white p-0 shadow-[0_-20px_60px_rgba(0,0,0,0.12)]"
+        >
+          <div className="flex items-center justify-between border-b border-border px-6 py-4.5">
+            <SheetTitle className="font-display text-lg font-semibold tracking-tight text-ink">
+              Order Summary
+            </SheetTitle>
+            <SheetClose asChild>
+              <button
+                type="button"
+                aria-label="Close"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+              >
+                <X className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </SheetClose>
+          </div>
 
           {body}
 
-          <SheetFooter className="flex-row gap-3 border-t border-border p-4">
+          <SheetFooter className="flex-row gap-3 border-t border-border bg-white p-4">
             {footerButtons}
           </SheetFooter>
         </SheetContent>
@@ -284,14 +306,28 @@ export function BuyNowModal() {
 
   return (
     <Dialog open={!!request} onOpenChange={(next) => !next && closeBuyNow()}>
-      <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-lg p-0 sm:max-w-md">
-        <DialogHeader className="border-b border-border px-5 py-3.5">
-          <DialogTitle className="font-display text-base font-semibold text-ink">Order Summary</DialogTitle>
-        </DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[90vh] w-full flex-col gap-0 overflow-hidden rounded-3xl border border-border bg-white p-0 shadow-[0_20px_60px_rgba(0,0,0,0.12)] ring-0 sm:max-w-lg"
+      >
+        <div className="flex items-center justify-between border-b border-border px-6 py-5">
+          <DialogTitle className="font-display text-lg font-semibold tracking-tight text-ink">
+            Order Summary
+          </DialogTitle>
+          <DialogClose asChild>
+            <button
+              type="button"
+              aria-label="Close"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink"
+            >
+              <X className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          </DialogClose>
+        </div>
 
         {body}
 
-        <DialogFooter className="flex-row gap-3 border-t border-border p-4 sm:justify-stretch">
+        <DialogFooter className="flex-row gap-3 border-t border-border bg-white p-5 sm:justify-stretch">
           {footerButtons}
         </DialogFooter>
       </DialogContent>

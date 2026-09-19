@@ -40,12 +40,12 @@ export function CategorySectionSkeleton() {
         <Bone className="h-7 w-48" />
         <Bone className="mt-2 h-4 w-64" />
       </div>
-      <div className="container-app mt-8">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-          <Bone className="h-80 w-full rounded-none md:col-span-7 md:row-span-2 md:h-[520px]" />
-          <Bone className="h-60 w-full rounded-none md:col-span-5" />
-          <Bone className="h-60 w-full rounded-none md:col-span-5" />
-          <Bone className="h-52 w-full rounded-none md:col-span-12" />
+      <div className="container-app mt-6 sm:mt-8">
+        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-24">
+          <Bone className="h-80 w-full rounded-2xl md:col-span-10 md:row-span-2 md:h-117.5" />
+          <Bone className="h-52 w-full rounded-2xl md:col-span-7" />
+          <Bone className="h-52 w-full rounded-2xl md:col-span-7" />
+          <Bone className="h-52 w-full rounded-2xl md:col-span-14" />
         </div>
       </div>
     </section>

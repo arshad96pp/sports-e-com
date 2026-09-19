@@ -19,16 +19,9 @@ export function CartPageClient() {
 
   const productIds = useMemo(() => items.map((i) => i.productId), [items]);
   const { products, loading: productsLoading } = useProductsByIds(productIds);
-
-  // Sticky readiness: flips true once the cart is hydrated AND its initial
-  // product data has resolved, then stays true. Using isInitialized/
-  // productsLoading directly as the render gate would also re-show the
-  // skeleton whenever a newly-added item's product data is still in
-  // flight, wiping out the cart the user is actively looking at.
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (isInitialized && !productsLoading) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
     }
   }, [isInitialized, productsLoading]);
