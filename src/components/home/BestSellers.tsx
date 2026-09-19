@@ -12,7 +12,7 @@ export async function BestSellers() {
           products={products}
           title="Best sellers"
           description="Popular gear chosen for your next game."
-          viewAllHref="/category/football"
+          viewAllHref="/products?bestSeller=true"
         />
       </div>
     </section>

@@ -12,7 +12,7 @@ export async function OffersSection() {
         <HomeSectionHeader
           title="Special picks"
           description="Selected gear. Better prices."
-          action={<ViewAllLink href="/category/football" label="View all deals" />}
+          action={<ViewAllLink href="/products?deal=true" label="View all deals" />}
         />
         <HomeProductRail products={products} />
       </div>

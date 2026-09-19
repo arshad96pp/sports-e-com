@@ -2,6 +2,9 @@ import type { CategorySlug, Product, ProductSpec, SortOption } from "@/lib/types
 
 export interface ProductQueryParams {
   category?: CategorySlug;
+  featured?: boolean;
+  bestSeller?: boolean;
+  dealOfTheDay?: boolean;
   search?: string;
   subcategories?: string[];
   brands?: string[];

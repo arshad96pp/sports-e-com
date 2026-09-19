@@ -11,7 +11,7 @@ export async function FeaturedProducts() {
       <HomeSectionHeader
         title="Featured gear"
         description="Popular picks for football, cricket, tennis and more."
-        action={<ViewAllLink href="/category/football" />}
+        action={<ViewAllLink href="/products?featured=true" />}
       />
       <HomeProductRail products={products} priorityCount={1} />
     </section>

@@ -352,6 +352,9 @@ export function createSupabaseProductRepository(): ProductRepository {
         .eq("is_active", true);
 
       if (categoryId) query = query.eq("category_id", categoryId);
+      if (params.featured) query = query.eq("is_featured", true);
+      if (params.bestSeller) query = query.eq("is_best_seller", true);
+      if (params.dealOfTheDay) query = query.eq("is_deal_of_the_day", true);
       if (params.search?.trim()) {
         const like = `%${params.search.trim()}%`;
         query = query.or(`name.ilike.${like},brand.ilike.${like},sport.ilike.${like},product_type.ilike.${like}`);
