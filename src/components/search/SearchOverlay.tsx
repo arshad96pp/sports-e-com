@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { ArrowRight, Clock, Loader2, Search, SearchX, TrendingUp, X } from "lucide-react";
 import { useSearchState } from "@/lib/hooks/useSearchState";
-import { POPULAR_SEARCHES } from "@/lib/utils/search";
+import { POPULAR_SEARCHES, POPULAR_SEARCH_CATEGORIES } from "@/lib/utils/search";
 import { SearchProductRow } from "@/components/search/SearchProductRow";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STORE } from "@/lib/config";
@@ -133,6 +133,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                 recentSearches={recentSearches}
                 onClearRecent={clearRecentSearches}
                 onPick={goToSearch}
+                onPickCategory={goToCategory}
                 bestSellers={bestSellers}
                 onNavigate={onClose}
               />
@@ -170,12 +171,14 @@ function IdleState({
   recentSearches,
   onClearRecent,
   onPick,
+  onPickCategory,
   bestSellers,
   onNavigate,
 }: {
   recentSearches: string[];
   onClearRecent: () => void;
   onPick: (term: string) => void;
+  onPickCategory: (slug: string) => void;
   bestSellers: Parameters<typeof SearchProductRow>[0]["product"][];
   onNavigate: () => void;
 }) {
@@ -197,21 +200,29 @@ function IdleState({
           )}
         </div>
         <div className="space-y-1">
-          {(hasRecent ? recentSearches : POPULAR_SEARCHES).map((term) => (
-            <button
-              key={term}
-              type="button"
-              onClick={() => onPick(term)}
-              className="group flex w-full items-center gap-4 rounded-lg px-1 py-2 text-left text-white/50 transition-all hover:text-white"
-            >
-              {hasRecent ? (
-                <Clock className="h-4 w-4 shrink-0 opacity-50" />
-              ) : (
-                <TrendingUp className="h-4 w-4 shrink-0 opacity-50" />
-              )}
-              <span className="text-lg font-light">{term}</span>
-            </button>
-          ))}
+          {hasRecent
+            ? recentSearches.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  onClick={() => onPick(term)}
+                  className="group flex w-full items-center gap-4 rounded-lg px-1 py-2 text-left text-white/50 transition-all hover:text-white"
+                >
+                  <Clock className="h-4 w-4 shrink-0 opacity-50" />
+                  <span className="text-lg font-light">{term}</span>
+                </button>
+              ))
+            : POPULAR_SEARCH_CATEGORIES.map(({ label, slug }) => (
+                <button
+                  key={slug}
+                  type="button"
+                  onClick={() => onPickCategory(slug)}
+                  className="group flex w-full items-center gap-4 rounded-lg px-1 py-2 text-left text-white/50 transition-all hover:text-white"
+                >
+                  <TrendingUp className="h-4 w-4 shrink-0 opacity-50" />
+                  <span className="text-lg font-light">{label}</span>
+                </button>
+              ))}
         </div>
       </div>
 
