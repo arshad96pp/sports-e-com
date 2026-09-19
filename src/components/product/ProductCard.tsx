@@ -77,7 +77,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                 e.stopPropagation();
                 addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name });
               }}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-white text-ink shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-border-strong hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 sm:h-10 sm:w-10"
+              className="flex h-9 w-9 cursor-pointer shrink-0 items-center justify-center rounded-full border border-border/70 bg-white text-ink shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-ink hover:bg-ink hover:text-white hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 sm:h-10 sm:w-10"
             >
               <ShoppingCart className="h-4 w-4" strokeWidth={1.75} />
             </button>

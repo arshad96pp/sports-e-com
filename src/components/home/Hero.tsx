@@ -112,14 +112,14 @@ export function Hero({ banners }: HeroProps) {
                         {slide.ctaLabel}
                         <ArrowRight className="h-4 w-4" />
                       </Link>
-                      {slide.categorySlug && (
+                      {/* {slide.categorySlug && (
                         <Link
                           href={`/category/${slide.categorySlug}`}
                           className="tap-target inline-flex items-center gap-2 rounded-full border border-white/30 px-7 text-sm font-bold text-white transition-colors hover:border-white"
                         >
                           Explore Category
                         </Link>
-                      )}
+                      )} */}
                     </div>
 
                     <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4 border-t border-white/15 pt-6">

@@ -15,6 +15,7 @@ const STORAGE_KEY = "stryde.wishlist";
 
 interface WishlistContextValue {
   productIds: string[];
+  isInitialized: boolean;
   isWishlisted: (productId: string) => boolean;
   toggle: (productId: string) => void;
   remove: (productId: string) => void;
@@ -89,8 +90,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ productIds, isWishlisted, toggle, remove }),
-    [productIds, isWishlisted, toggle, remove]
+    () => ({ productIds, isInitialized: hydrated, isWishlisted, toggle, remove }),
+    [productIds, hydrated, isWishlisted, toggle, remove]
   );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;

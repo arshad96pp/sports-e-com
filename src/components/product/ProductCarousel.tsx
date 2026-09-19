@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { A11y } from "swiper/modules";
@@ -59,8 +59,9 @@ export function ProductCarousel({
   density = "full",
 }: ProductCarouselProps) {
   const swiperRef = useRef<SwiperType | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
 
-  const arrows = (
+  const arrows = !isLocked && (
     <RailArrows
       onPrev={() => swiperRef.current?.slidePrev()}
       onNext={() => swiperRef.current?.slideNext()}
@@ -93,7 +94,10 @@ export function ProductCarousel({
         modules={[A11y]}
         onSwiper={(s) => {
           swiperRef.current = s;
+          setIsLocked(s.isLocked);
         }}
+        onLock={() => setIsLocked(true)}
+        onUnlock={() => setIsLocked(false)}
         slidesPerView={1.35}
         spaceBetween={12}
         watchOverflow
