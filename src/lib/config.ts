@@ -7,7 +7,7 @@
  * no leading "+" or spaces, e.g. 919876543210.
  */
 export const STORE_WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919999999999";
+  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "917034474858";
 
 /**
  * Canonical site URL used for metadata (canonical links, Open Graph, sitemap.xml,
@@ -18,14 +18,11 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.enzospo
 export const STORE = {
   name: "Enzo Sports",
   tagline: "Gear Up. Play Better.",
-  supportEmail: "support@enzosports.in",
-  supportPhone: "+91 98765 43210",
-  address: "Enzo Sports, MG Road, Bengaluru, Karnataka 560001",
+  supportEmail: "officialenzosports@gmail.com",
+  supportPhone: "+91 7034474858",
+  address: "Kerala Gramin Bank Opposite, Trippanachi, 673641, Kerala, India",
   social: {
-    instagram: "https://instagram.com",
-    facebook: "https://facebook.com",
-    twitter: "https://twitter.com",
-    youtube: "https://youtube.com",
+    instagram: "https://www.instagram.com/enzo_sports.in?stkn=eDd2bjIzazlnbm8x",
   },
 };
 

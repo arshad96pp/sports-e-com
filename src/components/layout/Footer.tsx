@@ -3,22 +3,19 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { getAllCategories } from "@/lib/repositories/category-repository";
 import { STORE } from "@/lib/config";
-import { FacebookIcon, InstagramIcon, XIcon, YoutubeIcon } from "@/components/icons/SocialIcons";
+import { InstagramIcon } from "@/components/icons/SocialIcons";
 import logo from "@/app/dp2.webp";
 
 const SUPPORT_LINKS = [
   { label: "Contact Us", href: "/contact" },
-  { label: "Shipping Policy", href: "/shipping-policy" },
-  { label: "Return Policy", href: "/return-policy" },
+  // { label: "Shipping Policy", href: "/shipping-policy" },
+  // { label: "Return Policy", href: "/return-policy" },
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms & Conditions", href: "/terms" },
 ];
 
 const SOCIAL_LINKS = [
   { icon: InstagramIcon, href: STORE.social.instagram, label: "Instagram" },
-  { icon: FacebookIcon, href: STORE.social.facebook, label: "Facebook" },
-  { icon: XIcon, href: STORE.social.twitter, label: "Twitter" },
-  { icon: YoutubeIcon, href: STORE.social.youtube, label: "YouTube" },
 ];
 
 export async function Footer() {
@@ -96,11 +93,15 @@ export async function Footer() {
             </li>
             <li className="flex items-center gap-2">
               <Phone className="h-4 w-4 shrink-0 text-accent" />
-              {STORE.supportPhone}
+              <a href={`tel:${STORE.supportPhone.replace(/\s/g, "")}`} className="transition-colors hover:text-accent">
+                {STORE.supportPhone}
+              </a>
             </li>
             <li className="flex items-center gap-2">
               <Mail className="h-4 w-4 shrink-0 text-accent" />
-              {STORE.supportEmail}
+              <a href={`mailto:${STORE.supportEmail}`} className="transition-colors hover:text-accent">
+                {STORE.supportEmail}
+              </a>
             </li>
           </ul>
         </div>

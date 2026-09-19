@@ -107,7 +107,7 @@ export default function AboutPage() {
                 <div className="mb-6 flex items-center gap-3">
                   <span className="h-px w-12 bg-[#c4a35a]" />
                   <span className="text-[10px] font-bold tracking-[0.3em] text-[#c4a35a] uppercase md:text-xs">
-                    Based in Bengaluru
+                    Based in Kerala
                   </span>
                 </div>
                 <h2 className="mb-8 font-display text-3xl leading-[1.1] font-light tracking-tight text-ink md:text-6xl">
@@ -121,7 +121,7 @@ export default function AboutPage() {
                     {STORE.name}.
                   </p>
                   <p>
-                    From Bengaluru we curate football, cricket, tennis and multi-sport accessories —
+                    From Kerala we curate football, cricket, tennis and multi-sport accessories —
                     selected for durability, performance and value, then confirmed with you personally
                     over WhatsApp.
                   </p>
@@ -130,7 +130,7 @@ export default function AboutPage() {
               <div className="grid grid-cols-2 gap-8 border-t border-ink/5 pt-8 md:gap-12">
                 <div>
                   <h3 className="mb-2 text-[10px] font-bold tracking-widest text-ink/30 uppercase">Heritage</h3>
-                  <p className="text-sm font-bold text-ink">Bengaluru, India</p>
+                  <p className="text-sm font-bold text-ink">Kerala, India</p>
                 </div>
                 <div>
                   <h3 className="mb-2 text-[10px] font-bold tracking-widest text-ink/30 uppercase">Scope</h3>
@@ -150,7 +150,7 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold tracking-widest text-ink/30 uppercase">Store</p>
-                    <p className="text-sm leading-none font-bold text-ink">MG Road, Bengaluru</p>
+                    <p className="text-sm leading-none font-bold text-ink">Trippanachi, Kerala</p>
                   </div>
                 </div>
               </div>
