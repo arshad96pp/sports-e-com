@@ -16,3 +16,7 @@ export async function createAddress(userId: string, data: Address): Promise<Addr
 export async function deleteAddress(userId: string, addressId: string): Promise<void> {
   return getAddressRepository().deleteAddress(userId, addressId);
 }
+
+export async function setDefaultAddress(userId: string, addressId: string): Promise<void> {
+  return getAddressRepository().setDefaultAddress(userId, addressId);
+}

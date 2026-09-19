@@ -63,5 +63,11 @@ export function createSupabaseAddressRepository(): AddressRepository {
       const supabase = await createClient();
       await supabase.from("addresses").delete().eq("id", addressId).eq("user_id", userId);
     },
+
+    async setDefaultAddress(userId: string, addressId: string): Promise<void> {
+      const supabase = await createClient();
+      await supabase.from("addresses").update({ is_default: false }).eq("user_id", userId);
+      await supabase.from("addresses").update({ is_default: true }).eq("id", addressId).eq("user_id", userId);
+    },
   };
 }

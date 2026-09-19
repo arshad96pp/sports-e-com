@@ -7,9 +7,13 @@ import { useAuth } from "@/lib/context/AuthContext";
 export function AccountGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, hydrated } = useAuth();
 
-  if (!hydrated) return null;
-
-  if (!isAuthenticated) {
+  // The proxy (see src/proxy.ts) already redirects signed-out requests away
+  // from /account before this ever renders, so on first paint we can assume
+  // authenticated rather than blanking the page until the client auth
+  // listener catches up. Only swap to the logged-out state once hydration
+  // actually confirms the session is gone (e.g. it expired while this tab
+  // was open) — never during the loading window itself.
+  if (hydrated && !isAuthenticated) {
     return (
       <div className="container-app flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
         <UserCircle className="mb-4 h-14 w-14 text-muted-soft" strokeWidth={1.5} />

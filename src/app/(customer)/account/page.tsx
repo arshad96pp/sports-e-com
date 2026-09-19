@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AccountPageClient } from "@/components/account/AccountPageClient";
 import { requireNotAdmin } from "@/lib/auth/admin-guard";
+import { getCurrentUser } from "@/lib/auth/session";
+import { listAddresses } from "@/lib/services/address-service";
 import { STORE } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -11,5 +13,13 @@ export const metadata: Metadata = {
 
 export default async function AccountPage() {
   await requireNotAdmin();
-  return <AccountPageClient />;
+  const user = await getCurrentUser();
+  const addresses = user ? await listAddresses(user.id) : [];
+
+  return (
+    <AccountPageClient
+      initialProfile={user ? { fullName: user.fullName, email: user.email, phone: user.phone ?? "" } : null}
+      initialAddresses={addresses}
+    />
+  );
 }

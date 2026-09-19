@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { STORE } from "@/lib/config";
 import { useToast } from "@/lib/context/ToastContext";
@@ -37,7 +37,6 @@ function GenericDestinationSkeleton() {
 }
 
 export function LoginPageClient() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const { isNavigating, replace } = useTransitionNavigation();
@@ -58,13 +57,6 @@ export function LoginPageClient() {
   const submittingRef = useRef(false);
 
   const destination = callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : "/account";
-
-  // Warm the destination's RSC payload before the user even finishes typing,
-  // so navigation below can resolve instantly instead of waiting on a fresh
-  // fetch once login succeeds.
-  useEffect(() => {
-    router.prefetch(destination);
-  }, [router, destination]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

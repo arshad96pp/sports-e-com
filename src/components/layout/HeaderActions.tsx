@@ -74,9 +74,6 @@ export function HeaderActions() {
           className="tap-target hidden items-center justify-center gap-2 rounded-full px-2 lg:flex"
         >
           <User className="h-5 w-5" />
-          <span className="max-w-27.5 truncate text-sm font-semibold text-ink">
-            {isAuthenticated ? user?.fullName.split(" ")[0] : "Login"}
-          </span>
         </Link>
 
         <Link href="/cart" aria-label="Cart" className="tap-target relative flex items-center justify-center">

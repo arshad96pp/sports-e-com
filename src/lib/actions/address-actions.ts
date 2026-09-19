@@ -40,3 +40,12 @@ export async function deleteAddressAction(addressId: string): Promise<ActionResu
   revalidatePath("/account");
   return { ok: true };
 }
+
+export async function setDefaultAddressAction(addressId: string): Promise<ActionResult> {
+  const userId = await getCurrentCustomerId();
+  if (!userId) return { ok: false, error: "You must be logged in." };
+
+  await addressService.setDefaultAddress(userId, addressId);
+  revalidatePath("/account");
+  return { ok: true };
+}

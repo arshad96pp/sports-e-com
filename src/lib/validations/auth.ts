@@ -39,6 +39,16 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+export const profileSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter your full name").max(120),
+  phone: z
+    .string()
+    .trim()
+    .max(20)
+    .refine((v) => v === "" || v.length >= 7, "Enter a valid phone number")
+    .optional(),
+});
+
 export const addressSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(7).max(20),

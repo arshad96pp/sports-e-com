@@ -47,5 +47,13 @@ export function createSupabaseAuthSessionPort(): AuthSessionPort {
       // be used to enumerate registered emails.
       await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     },
+
+    async updateProfile(userId: string, data: { fullName: string; phone: string }): Promise<void> {
+      const supabase = await createClient();
+      await supabase
+        .from("profiles")
+        .update({ full_name: data.fullName, phone: data.phone || null })
+        .eq("id", userId);
+    },
   };
 }

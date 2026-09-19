@@ -33,6 +33,8 @@ export interface AuthSessionPort {
   getAuthenticatedUser(): Promise<AuthUser | null>;
   getProfileById(userId: string): Promise<ProfileRecord | null>;
   resetPasswordForEmail(email: string, redirectTo: string): Promise<void>;
+  /** Updates the caller's own display name and phone. Email is the auth identity and isn't editable here. */
+  updateProfile(userId: string, data: { fullName: string; phone: string }): Promise<void>;
 }
 
 export interface AuthClientPort {

@@ -265,32 +265,39 @@ body {
 }
 
 /* Skeleton shimmer: a soft light sweep over a light-gray base, used instead
-   of the default pulse animation for a calmer, more premium loading feel. */
-.skeleton-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.skeleton-shimmer::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.75) 50%,
-    transparent 100%
-  );
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+   of the default pulse animation for a calmer, more premium loading feel.
+   Scoped to @layer components (below Tailwind's own @layer utilities) so a
+   utility class like `absolute` on the same element — e.g. an icon bone
+   overlaid on a card — still wins over this rule's `position: relative`.
+   Outside a layer, this would beat utilities regardless of class order,
+   since unlayered styles always outrank layered ones in the cascade. */
+@layer components {
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.75) 50%,
+      transparent 100%
+    );
+    animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer::after {
+      animation: none;
+    }
+  }
 }
 @keyframes skeleton-shimmer {
   100% {
     transform: translateX(100%);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer::after {
-    animation: none;
   }
 }
 

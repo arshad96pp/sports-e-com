@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
-import { STORE } from "@/lib/config";
 import { useToast } from "@/lib/context/ToastContext";
 import { useTransitionNavigation } from "@/lib/hooks/useTransitionNavigation";
 import { getAuthClientPort } from "@/lib/config/providers.client";
@@ -128,7 +127,6 @@ export function RegisterPageClient() {
             <Label htmlFor="reg-name" className="mb-1.5 text-xs font-semibold text-ink-soft">
               Full Name
             </Label>
-            
             <Input
               id="reg-name"
               type="text"
