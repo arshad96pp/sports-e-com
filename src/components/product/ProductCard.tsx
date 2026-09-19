@@ -48,12 +48,12 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           />
         </div>
 
-        <div className="flex flex-1 flex-col gap-2 p-3.5 sm:p-4">
+        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
           <h3 className="line-clamp-2 min-h-[2.6em] text-[13.5px] font-medium leading-snug text-ink sm:text-sm">
             {product.name}
           </h3>
 
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <RatingStars rating={product.rating} tone="card" showCount={false} />
             <span
               className={
@@ -66,7 +66,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             </span>
           </div>
 
-          <div className="mt-auto flex items-end justify-between gap-3 pt-1">
+          <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-1">
             <PriceBlock price={product.price} mrp={product.mrp} tone="card" />
 
             <button
@@ -77,7 +77,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                 e.stopPropagation();
                 addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name });
               }}
-              className="flex h-9 w-9 cursor-pointer shrink-0 items-center justify-center rounded-full border border-border/70 bg-white text-ink shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-ink hover:bg-ink hover:text-white hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 sm:h-10 sm:w-10"
+              className="flex h-8 w-8 cursor-pointer shrink-0 items-center justify-center rounded-full border border-border/70 bg-white text-ink shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-ink hover:bg-ink hover:text-white hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 sm:h-10 sm:w-10"
             >
               <ShoppingCart className="h-4 w-4" strokeWidth={1.75} />
             </button>

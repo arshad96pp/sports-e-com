@@ -10,7 +10,7 @@ export async function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur">
-      <div className="container-app flex h-16 items-center gap-4 lg:h-18">
+      <div className="container-app flex h-16 items-center gap-0 lg:h-18">
         <HeaderMenuButton categories={categories} />
 
         <Link href="/" className="relative h-12 aspect-2084/1102 shrink-0 lg:h-14" aria-label={STORE.name}>
