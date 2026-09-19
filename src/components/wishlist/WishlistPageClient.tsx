@@ -23,7 +23,7 @@ export function WishlistPageClient() {
     return (
       <div className="container-app py-6">
         <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Wishlist" }]} />
-        <h1 className="mt-3 mb-6 font-display text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+        <h1 className="mt-3 mb-6 font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           Wishlist
         </h1>
         <EmptyState
@@ -40,7 +40,7 @@ export function WishlistPageClient() {
   return (
     <div className="container-app py-6">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Wishlist" }]} />
-      <h1 className="mt-3 mb-6 font-display text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+      <h1 className="mt-3 mb-6 font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
         Wishlist <span className="text-muted">({products.length})</span>
       </h1>
 

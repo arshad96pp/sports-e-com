@@ -99,7 +99,7 @@ export function RegisterPageClient() {
     return (
       <div className="container-app flex min-h-[70vh] items-center justify-center py-12">
         <div className="w-full max-w-sm text-center">
-          <span className="font-display text-2xl font-extrabold tracking-tight text-ink">{STORE.name}</span>
+          <span className="font-display text-2xl font-bold tracking-tight text-ink">{STORE.name}</span>
           <div className="mx-auto mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-surface">
             <MailCheck className="h-5 w-5 text-ink" />
           </div>
@@ -120,7 +120,7 @@ export function RegisterPageClient() {
     <div className="container-app flex min-h-[70vh] items-center justify-center py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="font-display text-2xl font-extrabold tracking-tight text-ink">{STORE.name}</span>
+          <span className="font-display text-2xl font-bold tracking-tight text-ink">{STORE.name}</span>
           <h1 className="mt-4 font-display text-xl font-bold text-ink">Create your account</h1>
           <p className="mt-1 text-sm text-muted">Join to save your favourites and addresses</p>
         </div>

@@ -23,7 +23,7 @@ export function NavigationOverlay({ show }: { show: boolean }) {
         show ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
-      <span className="font-display text-lg font-extrabold tracking-tight text-ink">{STORE.name}</span>
+      <span className="font-display text-lg font-bold tracking-tight text-ink">{STORE.name}</span>
       <Loader2 className="h-6 w-6 animate-spin text-ink-soft" />
     </div>
   );

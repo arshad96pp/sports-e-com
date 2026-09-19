@@ -67,7 +67,7 @@ export function ResetPasswordClient() {
     <div className="container-app flex min-h-[70vh] items-center justify-center py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="font-display text-2xl font-extrabold tracking-tight text-ink">{STORE.name}</span>
+          <span className="font-display text-2xl font-bold tracking-tight text-ink">{STORE.name}</span>
           <div className="mx-auto mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-surface">
             <KeyRound className="h-5 w-5 text-ink" />
           </div>

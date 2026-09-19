@@ -54,7 +54,7 @@ export function ProductListing({
       <Breadcrumbs items={breadcrumbs} />
 
       <div className="mt-3 mb-5">
-        <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
         {description && <p className="mt-1.5 max-w-2xl text-sm text-muted">{description}</p>}
         <p className="mt-2 text-xs font-medium text-muted-soft">
           {total} {total === 1 ? "product" : "products"}

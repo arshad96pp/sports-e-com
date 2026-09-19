@@ -36,12 +36,12 @@ export function AuthBrandPanel() {
       <div className="absolute inset-0 bg-linear-to-b from-ink/80 via-ink/25 to-ink/85" />
 
       <div className="relative flex flex-1 flex-col p-10 xl:p-14">
-        <Link href="/" className="font-display text-lg font-extrabold tracking-tight text-white">
+        <Link href="/" className="font-display text-lg font-bold tracking-tight text-white">
           {STORE.name}
         </Link>
 
         <div className="flex flex-1 flex-col justify-center">
-          <h2 className="max-w-sm font-display text-3xl font-extrabold leading-[1.12] tracking-tight text-white xl:text-4xl">
+          <h2 className="max-w-sm font-display text-3xl font-bold leading-[1.12] tracking-tight text-white xl:text-4xl">
             {STORE.tagline}
           </h2>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/70">

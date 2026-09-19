@@ -65,7 +65,7 @@ export function AdminLoginClient() {
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <span className="font-display text-2xl font-extrabold tracking-tight text-white">{STORE.name}</span>
+          <span className="font-display text-2xl font-bold tracking-tight text-white">{STORE.name}</span>
           <div className="mx-auto mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
             <ShieldAlert className="h-5 w-5 text-accent" />
           </div>

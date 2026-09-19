@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Quicksand } from "next/font/google";
 import "./globals.css";
 import { STORE, SITE_URL } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({
-  variable: "--font-inter",
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -46,7 +45,7 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={cn(inter.variable, "font-sans")}>
+    <html lang="en" data-scroll-behavior="smooth" className={cn(quicksand.variable, "font-sans")}>
       <body className="flex min-h-screen flex-col antialiased">{children}</body>
     </html>
   );

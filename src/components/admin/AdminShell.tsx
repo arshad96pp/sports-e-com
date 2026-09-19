@@ -75,7 +75,7 @@ export function AdminShell({ adminName, children }: { adminName: string; childre
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-ink lg:flex">
         <div className="flex h-16 items-center gap-2 border-b border-white/10 px-5">
-          <span className="font-display text-lg font-extrabold tracking-tight text-white">{STORE.name}</span>
+          <span className="font-display text-lg font-bold tracking-tight text-white">{STORE.name}</span>
           <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-ink">ADMIN</span>
         </div>
         {navLinks}
@@ -106,7 +106,7 @@ export function AdminShell({ adminName, children }: { adminName: string; childre
           />
           <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-ink">
             <div className="flex h-16 items-center justify-between border-b border-white/10 px-5">
-              <span className="font-display text-lg font-extrabold tracking-tight text-white">{STORE.name} Admin</span>
+              <span className="font-display text-lg font-bold tracking-tight text-white">{STORE.name} Admin</span>
               <button type="button" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="text-white">
                 <X className="h-5 w-5" />
               </button>

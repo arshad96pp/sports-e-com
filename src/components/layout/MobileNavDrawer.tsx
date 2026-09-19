@@ -20,7 +20,7 @@ export function MobileNavDrawer({ open, onClose, categories }: MobileNavDrawerPr
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent side="left" className="flex w-[82%] max-w-sm flex-col gap-0 p-0 lg:hidden">
         <SheetHeader className="border-b border-border px-5 py-4">
-          <SheetTitle className="text-left font-display text-xl font-extrabold tracking-tight text-ink">
+          <SheetTitle className="text-left font-display text-xl font-bold tracking-tight text-ink">
             {STORE.name}
           </SheetTitle>
         </SheetHeader>

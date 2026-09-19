@@ -133,7 +133,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
         {/* Info */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">{product.brand}</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+          <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             {product.name}
           </h1>
           <div className="mt-2.5 flex items-center gap-3">

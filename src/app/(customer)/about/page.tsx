@@ -140,7 +140,7 @@ export default function AboutPage() {
             </div>
 
             <div className="relative aspect-4/5 overflow-hidden rounded-[2rem] border border-ink/5 bg-[#f9f8f4] md:rounded-[3rem]">
-              <div className="pointer-events-none absolute inset-0 flex rotate-[-10deg] items-center justify-center text-[15vw] font-black tracking-tighter text-ink/5 select-none">
+              <div className="pointer-events-none absolute inset-0 flex rotate-[-10deg] items-center justify-center text-[15vw] font-bold tracking-tighter text-ink/5 select-none">
                 ENZO
               </div>
               <div className="absolute bottom-10 left-10 hidden rounded-2xl bg-white p-6 shadow-2xl md:block">
@@ -161,7 +161,7 @@ export default function AboutPage() {
 
       <section className="border-y border-ink/5 bg-[#fcfcfc] py-24 md:py-32">
         <div className="container-app">
-          <p className="mb-12 text-center text-[10px] font-black tracking-[0.4em] text-ink/20 uppercase md:text-left">
+          <p className="mb-12 text-center text-[10px] font-bold tracking-[0.4em] text-ink/20 uppercase md:text-left">
             The Enzo way
           </p>
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3">
@@ -232,7 +232,7 @@ export default function AboutPage() {
             </div>
             <Link
               href="/#categories"
-              className="inline-flex items-center gap-4 rounded-full bg-white px-10 py-5 text-[10px] font-black tracking-[0.2em] text-ink uppercase shadow-2xl transition-all hover:bg-[#c4a35a] hover:text-white"
+              className="inline-flex items-center gap-4 rounded-full bg-white px-10 py-5 text-[10px] font-bold tracking-[0.2em] text-ink uppercase shadow-2xl transition-all hover:bg-[#c4a35a] hover:text-white"
             >
               Discover the Collection
               <ArrowRight className="h-4 w-4" />
