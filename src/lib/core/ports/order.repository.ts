@@ -5,7 +5,7 @@ import type { Address } from "@/lib/types";
  * `Database` type, so this port has zero dependency on a provider's schema
  * codegen. Values match `public.order_status` in the current Postgres schema.
  */
-export type OrderStatus = "pending_whatsapp" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled";
+export type OrderStatus = "pending" | "confirmed" | "shipped" | "cancelled";
 
 export interface OrderItemDTO {
   productId: string | null;

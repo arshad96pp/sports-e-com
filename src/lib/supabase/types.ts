@@ -944,13 +944,7 @@ export type Database = {
       }
     }
     Enums: {
-      order_status:
-        | "pending_whatsapp"
-        | "confirmed"
-        | "processing"
-        | "shipped"
-        | "delivered"
-        | "cancelled"
+      order_status: "pending" | "confirmed" | "shipped" | "cancelled"
       user_role: "customer" | "super_admin"
     }
     CompositeTypes: {
@@ -1082,14 +1076,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      order_status: [
-        "pending_whatsapp",
-        "confirmed",
-        "processing",
-        "shipped",
-        "delivered",
-        "cancelled",
-      ],
+      order_status: ["pending", "confirmed", "shipped", "cancelled"],
       user_role: ["customer", "super_admin"],
     },
   },
