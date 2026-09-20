@@ -2,17 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
+import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AdminModalContent,
+  AdminModalHeader,
+  AdminModalBody,
+  AdminModalFooter,
+  AdminModalError,
+  AdminFormField,
+} from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -66,63 +66,73 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
           <Button className="rounded-full"><Plus className="h-4 w-4" />New Banner</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{banner ? "Edit Banner" : "New Banner"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && <p className="rounded-lg bg-signal-soft px-3 py-2 text-xs font-medium text-signal">{error}</p>}
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Eyebrow</Label>
-            <Input required value={values.eyebrow} onChange={(e) => set("eyebrow", e.target.value)} className="h-10" placeholder="Built For Every Game" />
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Title</Label>
-            <Input required value={values.title} onChange={(e) => set("title", e.target.value)} className="h-10" />
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Subtitle</Label>
-            <Textarea rows={2} value={values.subtitle} onChange={(e) => set("subtitle", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">CTA Label</Label>
-              <Input required value={values.ctaLabel} onChange={(e) => set("ctaLabel", e.target.value)} className="h-10" />
+      <AdminModalContent size="lg">
+        <AdminModalHeader title={banner ? "Edit Banner" : "New Banner"} />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <AdminModalBody className="flex flex-col gap-4">
+            <AdminModalError>{error}</AdminModalError>
+            <AdminFormField label="Eyebrow">
+              <Input
+                required
+                value={values.eyebrow}
+                onChange={(e) => set("eyebrow", e.target.value)}
+                className="h-10"
+                placeholder="Built For Every Game"
+              />
+            </AdminFormField>
+            <AdminFormField label="Title">
+              <Input required value={values.title} onChange={(e) => set("title", e.target.value)} className="h-10" />
+            </AdminFormField>
+            <AdminFormField label="Subtitle">
+              <Textarea rows={2} value={values.subtitle} onChange={(e) => set("subtitle", e.target.value)} />
+            </AdminFormField>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <AdminFormField label="CTA Label">
+                <Input required value={values.ctaLabel} onChange={(e) => set("ctaLabel", e.target.value)} className="h-10" />
+              </AdminFormField>
+              <AdminFormField label="CTA Link">
+                <Input
+                  required
+                  value={values.ctaHref}
+                  onChange={(e) => set("ctaHref", e.target.value)}
+                  className="h-10"
+                  placeholder="/category/football"
+                />
+              </AdminFormField>
             </div>
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">CTA Link</Label>
-              <Input required value={values.ctaHref} onChange={(e) => set("ctaHref", e.target.value)} className="h-10" placeholder="/category/football" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <AdminFormField label="Category">
+                <Select value={values.categoryId ?? "__none"} onValueChange={(v) => set("categoryId", v === "__none" ? null : v)}>
+                  <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">None</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </AdminFormField>
+              <AdminFormField label="Sort Order">
+                <Input type="number" value={values.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} className="h-10" />
+              </AdminFormField>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Category</Label>
-              <Select value={values.categoryId ?? "__none"} onValueChange={(v) => set("categoryId", v === "__none" ? null : v)}>
-                <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">None</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Sort Order</Label>
-              <Input type="number" value={values.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} className="h-10" />
-            </div>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ink-soft">
-            <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
-            Active (upload both images before activating)
-          </label>
-          <DialogFooter>
+            <label className={`flex items-center gap-2 text-sm text-ink-soft ${banner ? "" : "opacity-50"}`}>
+              <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} disabled={!banner} />
+              {banner ? "Active" : "Active (upload a desktop image after creating, then edit to activate)"}
+            </label>
+          </AdminModalBody>
+          <AdminModalFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="rounded-full" disabled={isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isPending} className="rounded-full">
               {isPending ? "Saving…" : banner ? "Save Changes" : "Create Banner"}
             </Button>
-          </DialogFooter>
+          </AdminModalFooter>
         </form>
-      </DialogContent>
+      </AdminModalContent>
     </Dialog>
   );
 }

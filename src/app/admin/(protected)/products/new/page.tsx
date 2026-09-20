@@ -11,7 +11,10 @@ export default async function NewProductPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <AdminPageHeader title="New Product" description="Images can be added after the product is created." />
+      <AdminPageHeader
+        title="New Product"
+        description="SKU is generated automatically from the slug — edit it if you need a custom value. Images can be added after the product is created."
+      />
       <ProductForm categories={categories} />
     </div>
   );

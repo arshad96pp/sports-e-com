@@ -2,17 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
+import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AdminModalContent,
+  AdminModalHeader,
+  AdminModalBody,
+  AdminModalFooter,
+  AdminModalError,
+  AdminFormField,
+} from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -79,61 +79,68 @@ export function OfferFormDialog({
           <Button className="rounded-full"><Plus className="h-4 w-4" />New Offer</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{offer ? "Edit Offer" : "New Offer"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && <p className="rounded-lg bg-signal-soft px-3 py-2 text-xs font-medium text-signal">{error}</p>}
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Title</Label>
-            <Input required value={values.title} onChange={(e) => set("title", e.target.value)} className="h-10" />
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Description</Label>
-            <Textarea rows={2} value={values.description} onChange={(e) => set("description", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Discount %</Label>
-              <Input required type="number" min={0} max={100} value={values.discountPercent} onChange={(e) => set("discountPercent", Number(e.target.value))} className="h-10" />
+      <AdminModalContent size="lg">
+        <AdminModalHeader title={offer ? "Edit Offer" : "New Offer"} />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <AdminModalBody className="flex flex-col gap-4">
+            <AdminModalError>{error}</AdminModalError>
+            <AdminFormField label="Title">
+              <Input required value={values.title} onChange={(e) => set("title", e.target.value)} className="h-10" />
+            </AdminFormField>
+            <AdminFormField label="Description">
+              <Textarea rows={2} value={values.description} onChange={(e) => set("description", e.target.value)} />
+            </AdminFormField>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <AdminFormField label="Discount %">
+                <Input
+                  required
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={values.discountPercent}
+                  onChange={(e) => set("discountPercent", Number(e.target.value))}
+                  className="h-10"
+                />
+              </AdminFormField>
+              <AdminFormField label="Start Date">
+                <Input required type="date" value={values.startDate} onChange={(e) => set("startDate", e.target.value)} className="h-10" />
+              </AdminFormField>
+              <AdminFormField label="End Date">
+                <Input required type="date" value={values.endDate} onChange={(e) => set("endDate", e.target.value)} className="h-10" />
+              </AdminFormField>
             </div>
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Start Date</Label>
-              <Input required type="date" value={values.startDate} onChange={(e) => set("startDate", e.target.value)} className="h-10" />
-            </div>
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">End Date</Label>
-              <Input required type="date" value={values.endDate} onChange={(e) => set("endDate", e.target.value)} className="h-10" />
-            </div>
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Applicable Categories</Label>
-            <div className="flex max-h-32 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border p-2.5">
-              {categories.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 text-sm text-ink-soft">
-                  <Checkbox
-                    checked={values.categoryIds.includes(c.id)}
-                    onCheckedChange={(checked) =>
-                      set("categoryIds", checked ? [...values.categoryIds, c.id] : values.categoryIds.filter((id) => id !== c.id))
-                    }
-                  />
-                  {c.name}
-                </label>
-              ))}
-            </div>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ink-soft">
-            <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
-            Active
-          </label>
-          <DialogFooter>
+            <AdminFormField label="Applicable Categories">
+              <div className="flex max-h-32 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border p-2.5">
+                {categories.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm text-ink-soft">
+                    <Checkbox
+                      checked={values.categoryIds.includes(c.id)}
+                      onCheckedChange={(checked) =>
+                        set("categoryIds", checked ? [...values.categoryIds, c.id] : values.categoryIds.filter((id) => id !== c.id))
+                      }
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            </AdminFormField>
+            <label className="flex items-center gap-2 text-sm text-ink-soft">
+              <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
+              Active
+            </label>
+          </AdminModalBody>
+          <AdminModalFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="rounded-full" disabled={isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isPending} className="rounded-full">
               {isPending ? "Saving…" : offer ? "Save Changes" : "Create Offer"}
             </Button>
-          </DialogFooter>
+          </AdminModalFooter>
         </form>
-      </DialogContent>
+      </AdminModalContent>
     </Dialog>
   );
 }

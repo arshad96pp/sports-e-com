@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,10 +10,12 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { AdminModalError } from "@/components/admin/AdminModal";
 
 interface ConfirmDeleteButtonProps {
   itemLabel: string;
@@ -33,13 +35,16 @@ export function ConfirmDeleteButton({ itemLabel, onConfirm }: ConfirmDeleteButto
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="rounded-2xl border border-border bg-white shadow-[0_20px_60px_rgba(10,10,10,0.10)] ring-0">
         <AlertDialogHeader>
+          <AlertDialogMedia className="bg-signal-soft text-signal">
+            <AlertTriangle />
+          </AlertDialogMedia>
           <AlertDialogTitle>Delete {itemLabel}?</AlertDialogTitle>
           <AlertDialogDescription>This can&apos;t be undone.</AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-xs font-medium text-signal">{error}</p>}
-        <AlertDialogFooter>
+        <AdminModalError>{error}</AdminModalError>
+        <AlertDialogFooter className="rounded-b-2xl bg-white">
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             disabled={isPending}

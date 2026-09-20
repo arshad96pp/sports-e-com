@@ -93,3 +93,23 @@ export async function uploadBannerImageAction(
   revalidateStorefront();
   return { ok: true, data: { url: result.publicUrl } };
 }
+
+/**
+ * Clears the mobile image only — the desktop image is the required primary
+ * image and can't be removed this way. The storefront falls back to the
+ * desktop image when mobile is empty (see Hero.tsx).
+ */
+export async function removeBannerMobileImageAction(bannerId: string): Promise<ActionResult> {
+  const admin = await getSuperAdminOrNull();
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  try {
+    const previousUrls = await adminBannerService.getBannerImageUrls(bannerId);
+    await adminBannerService.setBannerImage(bannerId, "imageUrlMobile", "");
+    if (previousUrls?.imageUrlMobile) await deleteBannerImageIfAny(previousUrls.imageUrlMobile);
+    revalidateStorefront();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not remove image." };
+  }
+}

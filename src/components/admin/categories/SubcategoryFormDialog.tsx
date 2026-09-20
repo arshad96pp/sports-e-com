@@ -2,17 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
+import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AdminModalContent,
+  AdminModalHeader,
+  AdminModalBody,
+  AdminModalFooter,
+  AdminModalError,
+  AdminFormField,
+} from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AdminCategory, AdminSubcategory, SubcategoryFormValues } from "@/lib/services/admin-category-service";
@@ -58,50 +58,52 @@ export function SubcategoryFormDialog({ categories, subcategory }: { categories:
           <Button className="rounded-full"><Plus className="h-4 w-4" />New Subcategory</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{subcategory ? "Edit Subcategory" : "New Subcategory"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && <p className="rounded-lg bg-signal-soft px-3 py-2 text-xs font-medium text-signal">{error}</p>}
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Category</Label>
-            <Select value={values.categoryId} onValueChange={(v) => set("categoryId", v)}>
-              <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Name</Label>
-            <Input
-              required
-              value={values.name}
-              onChange={(e) => {
-                set("name", e.target.value);
-                set("slug", slugify(e.target.value));
-              }}
-              className="h-10"
-            />
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Slug</Label>
-            <Input required value={values.slug} onChange={(e) => set("slug", e.target.value)} className="h-10" />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ink-soft">
-            <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
-            Active
-          </label>
-          <DialogFooter>
+      <AdminModalContent size="md">
+        <AdminModalHeader title={subcategory ? "Edit Subcategory" : "New Subcategory"} />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <AdminModalBody className="flex flex-col gap-4">
+            <AdminModalError>{error}</AdminModalError>
+            <AdminFormField label="Category">
+              <Select value={values.categoryId} onValueChange={(v) => set("categoryId", v)}>
+                <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </AdminFormField>
+            <AdminFormField label="Name">
+              <Input
+                required
+                value={values.name}
+                onChange={(e) => {
+                  set("name", e.target.value);
+                  set("slug", slugify(e.target.value));
+                }}
+                className="h-10"
+              />
+            </AdminFormField>
+            <AdminFormField label="Slug">
+              <Input required value={values.slug} onChange={(e) => set("slug", e.target.value)} className="h-10" />
+            </AdminFormField>
+            <label className="flex items-center gap-2 text-sm text-ink-soft">
+              <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
+              Active
+            </label>
+          </AdminModalBody>
+          <AdminModalFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="rounded-full" disabled={isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isPending} className="rounded-full">
               {isPending ? "Saving…" : subcategory ? "Save Changes" : "Create Subcategory"}
             </Button>
-          </DialogFooter>
+          </AdminModalFooter>
         </form>
-      </DialogContent>
+      </AdminModalContent>
     </Dialog>
   );
 }

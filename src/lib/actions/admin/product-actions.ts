@@ -24,18 +24,37 @@ function revalidateStorefront() {
   revalidateTag("products", { expire: 0 });
 }
 
-export async function createProductAction(values: ProductFormValues): Promise<ActionResult<{ id: string }>> {
+export async function createProductAction(
+  values: ProductFormValues,
+  options?: { autoSku?: boolean }
+): Promise<ActionResult<{ id: string }>> {
   const admin = await getSuperAdminOrNull();
   if (!admin) return { ok: false, error: "Unauthorized" };
 
   try {
-    const result = await adminProductService.createProduct(values);
+    const result = await adminProductService.createProduct(values, options);
     revalidateStorefront();
     revalidatePath("/admin/products");
     return { ok: true, data: result };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not create product." };
   }
+}
+
+export async function previewSkuAction(slugOrPrefix: string): Promise<ActionResult<{ sku: string }>> {
+  const admin = await getSuperAdminOrNull();
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const sku = await adminProductService.previewNextSku(slugOrPrefix);
+  return { ok: true, data: { sku } };
+}
+
+export async function checkSkuAvailableAction(sku: string, excludeId?: string): Promise<ActionResult<{ available: boolean }>> {
+  const admin = await getSuperAdminOrNull();
+  if (!admin) return { ok: false, error: "Unauthorized" };
+
+  const available = await adminProductService.isSkuAvailable(sku, excludeId);
+  return { ok: true, data: { available } };
 }
 
 export async function updateProductAction(id: string, values: ProductFormValues): Promise<ActionResult> {
@@ -58,7 +77,13 @@ export async function deleteProductAction(id: string): Promise<ActionResult> {
   if (!admin) return { ok: false, error: "Unauthorized" };
 
   try {
-    await adminProductService.deleteProduct(id);
+    const { imageUrls } = await adminProductService.deleteProduct(id);
+    await Promise.all(
+      imageUrls.map((url) => {
+        const path = pathFromPublicUrl("product-images", url);
+        return path ? deleteImage("product-images", path) : Promise.resolve();
+      })
+    );
     revalidateStorefront();
     revalidatePath("/admin/products");
     return { ok: true };
@@ -71,7 +96,11 @@ export async function setProductActiveAction(id: string, isActive: boolean): Pro
   const admin = await getSuperAdminOrNull();
   if (!admin) return { ok: false, error: "Unauthorized" };
 
-  await adminProductService.setProductActive(id, isActive);
+  try {
+    await adminProductService.setProductActive(id, isActive);
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not update product." };
+  }
   revalidateStorefront();
   revalidatePath("/admin/products");
   return { ok: true };
@@ -80,7 +109,7 @@ export async function setProductActiveAction(id: string, isActive: boolean): Pro
 export async function uploadProductImageAction(
   productId: string,
   formData: FormData
-): Promise<ActionResult<{ url: string }>> {
+): Promise<ActionResult<{ url: string; id: string }>> {
   const admin = await getSuperAdminOrNull();
   if (!admin) return { ok: false, error: "Unauthorized" };
 
@@ -91,8 +120,9 @@ export async function uploadProductImageAction(
   const result = await processAndUploadImage(file, "product-images", productId);
   if (!result.ok) return { ok: false, error: result.error };
 
+  let image: { id: string };
   try {
-    await adminProductService.addProductImage(productId, result.publicUrl, "", sortOrder);
+    image = await adminProductService.addProductImage(productId, result.publicUrl, "", sortOrder);
   } catch (error) {
     await deleteImage("product-images", result.path);
     return { ok: false, error: error instanceof Error ? error.message : "Could not save image." };
@@ -100,7 +130,7 @@ export async function uploadProductImageAction(
 
   revalidateStorefront();
   revalidatePath(`/admin/products/${productId}/edit`);
-  return { ok: true, data: { url: result.publicUrl } };
+  return { ok: true, data: { url: result.publicUrl, id: image.id } };
 }
 
 export async function deleteProductImageAction(productId: string, imageId: string, imageUrl: string): Promise<ActionResult> {

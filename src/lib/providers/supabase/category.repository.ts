@@ -1,6 +1,7 @@
 import "server-only";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
+import { isUniqueViolation } from "@/lib/utils/db-errors";
 import type { CategorySlug } from "@/lib/types";
 import type {
   AdminCategory,
@@ -130,7 +131,11 @@ export function createSupabaseCategoryRepository(): CategoryRepository {
         })
         .select("id")
         .single();
-      if (error || !data) throw new Error(error?.message ?? "Could not create category.");
+      if (error) {
+        if (isUniqueViolation(error, "slug")) throw new Error(`Slug "${values.slug}" is already in use. Choose a different slug.`);
+        throw new Error(error.message);
+      }
+      if (!data) throw new Error("Could not create category.");
       return { id: data.id };
     },
 
@@ -151,7 +156,10 @@ export function createSupabaseCategoryRepository(): CategoryRepository {
           icon: values.icon,
         })
         .eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isUniqueViolation(error, "slug")) throw new Error(`Slug "${values.slug}" is already in use. Choose a different slug.`);
+        throw new Error(error.message);
+      }
     },
 
     async deleteCategory(id: string): Promise<void> {
@@ -162,7 +170,8 @@ export function createSupabaseCategoryRepository(): CategoryRepository {
 
     async setCategoryImage(id: string, imageUrl: string): Promise<void> {
       const supabase = await createClient();
-      await supabase.from("categories").update({ image_url: imageUrl }).eq("id", id);
+      const { error } = await supabase.from("categories").update({ image_url: imageUrl }).eq("id", id);
+      if (error) throw new Error(error.message);
     },
 
     async createSubcategory(values: SubcategoryFormValues): Promise<{ id: string }> {
@@ -172,7 +181,13 @@ export function createSupabaseCategoryRepository(): CategoryRepository {
         .insert({ category_id: values.categoryId, name: values.name, slug: values.slug, is_active: values.isActive })
         .select("id")
         .single();
-      if (error || !data) throw new Error(error?.message ?? "Could not create subcategory.");
+      if (error) {
+        if (isUniqueViolation(error, "slug")) {
+          throw new Error(`Slug "${values.slug}" is already used by another subcategory in this category.`);
+        }
+        throw new Error(error.message);
+      }
+      if (!data) throw new Error("Could not create subcategory.");
       return { id: data.id };
     },
 
@@ -182,7 +197,12 @@ export function createSupabaseCategoryRepository(): CategoryRepository {
         .from("subcategories")
         .update({ category_id: values.categoryId, name: values.name, slug: values.slug, is_active: values.isActive })
         .eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isUniqueViolation(error, "slug")) {
+          throw new Error(`Slug "${values.slug}" is already used by another subcategory in this category.`);
+        }
+        throw new Error(error.message);
+      }
     },
 
     async deleteSubcategory(id: string): Promise<void> {

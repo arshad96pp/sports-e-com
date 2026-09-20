@@ -7,7 +7,21 @@ export interface CustomerDTO {
   createdAt: string;
 }
 
+export interface CustomerQueryParams {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CustomerQueryResult {
+  customers: CustomerDTO[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
 export interface CustomerRepository {
-  listCustomers(): Promise<CustomerDTO[]>;
+  listCustomers(params?: CustomerQueryParams): Promise<CustomerQueryResult>;
   setCustomerActive(userId: string, isActive: boolean): Promise<void>;
 }

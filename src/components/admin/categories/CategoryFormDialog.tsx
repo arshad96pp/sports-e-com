@@ -2,17 +2,17 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Plus, Upload } from "lucide-react";
+import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AdminModalContent,
+  AdminModalHeader,
+  AdminModalBody,
+  AdminModalFooter,
+  AdminModalError,
+  AdminFormField,
+} from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import type { AdminCategory } from "@/lib/services/admin-category-service";
@@ -97,73 +97,73 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
           <Button className="rounded-full"><Plus className="h-4 w-4" />New Category</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{category ? "Edit Category" : "New Category"}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && <p className="rounded-lg bg-signal-soft px-3 py-2 text-xs font-medium text-signal">{error}</p>}
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Name</Label>
-            <Input
-              required
-              value={values.name}
-              onChange={(e) => {
-                set("name", e.target.value);
-                set("slug", slugify(e.target.value));
-              }}
-              className="h-10"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Slug</Label>
-              <Input required value={values.slug} onChange={(e) => set("slug", e.target.value)} className="h-10" />
+      <AdminModalContent size="lg">
+        <AdminModalHeader title={category ? "Edit Category" : "New Category"} />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <AdminModalBody className="flex flex-col gap-4">
+            <AdminModalError>{error}</AdminModalError>
+            <AdminFormField label="Name">
+              <Input
+                required
+                value={values.name}
+                onChange={(e) => {
+                  set("name", e.target.value);
+                  set("slug", slugify(e.target.value));
+                }}
+                className="h-10"
+              />
+            </AdminFormField>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <AdminFormField label="Slug">
+                <Input required value={values.slug} onChange={(e) => set("slug", e.target.value)} className="h-10" />
+              </AdminFormField>
+              <AdminFormField label="Short Name (nav label)">
+                <Input required value={values.shortName} onChange={(e) => set("shortName", e.target.value)} className="h-10" />
+              </AdminFormField>
             </div>
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Short Name (nav label)</Label>
-              <Input required value={values.shortName} onChange={(e) => set("shortName", e.target.value)} className="h-10" />
+            <AdminFormField label="Description">
+              <Textarea required rows={2} value={values.description} onChange={(e) => set("description", e.target.value)} />
+            </AdminFormField>
+            <AdminFormField label="Listing Blurb (shown on category page)">
+              <Textarea rows={2} value={values.listingBlurb} onChange={(e) => set("listingBlurb", e.target.value)} />
+            </AdminFormField>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <AdminFormField label="SEO Title">
+                <Input value={values.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} className="h-10" />
+              </AdminFormField>
+              <AdminFormField label="Sort Order">
+                <Input type="number" value={values.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} className="h-10" />
+              </AdminFormField>
             </div>
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Description</Label>
-            <Textarea required rows={2} value={values.description} onChange={(e) => set("description", e.target.value)} />
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Listing Blurb (shown on category page)</Label>
-            <Textarea rows={2} value={values.listingBlurb} onChange={(e) => set("listingBlurb", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">SEO Title</Label>
-              <Input value={values.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} className="h-10" />
-            </div>
-            <div>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Sort Order</Label>
-              <Input type="number" value={values.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} className="h-10" />
-            </div>
-          </div>
-          <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">SEO Description</Label>
-            <Textarea rows={2} value={values.seoDescription} onChange={(e) => set("seoDescription", e.target.value)} />
-          </div>
-          <div>
-            <Label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
-              <Upload className="h-3.5 w-3.5" /> Image {category?.imageUrl && "(replace)"}
-            </Label>
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="text-sm" />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ink-soft">
-            <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
-            Active
-          </label>
-          <DialogFooter>
+            <AdminFormField label="SEO Description">
+              <Textarea rows={2} value={values.seoDescription} onChange={(e) => set("seoDescription", e.target.value)} />
+            </AdminFormField>
+            <AdminFormField
+              label={
+                <span className="flex items-center gap-1.5">
+                  <Upload className="h-3.5 w-3.5" /> Image {category?.imageUrl && "(replace)"}
+                </span>
+              }
+            >
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="text-sm" />
+            </AdminFormField>
+            <label className="flex items-center gap-2 text-sm text-ink-soft">
+              <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
+              Active
+            </label>
+          </AdminModalBody>
+          <AdminModalFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="rounded-full" disabled={isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isPending} className="rounded-full">
               {isPending ? "Saving…" : category ? "Save Changes" : "Create Category"}
             </Button>
-          </DialogFooter>
+          </AdminModalFooter>
         </form>
-      </DialogContent>
+      </AdminModalContent>
     </Dialog>
   );
 }

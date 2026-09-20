@@ -9,7 +9,11 @@ export async function setCustomerActiveAction(userId: string, isActive: boolean)
   const admin = await getSuperAdminOrNull();
   if (!admin) return { ok: false, error: "Unauthorized" };
 
-  await setCustomerActive(userId, isActive);
+  try {
+    await setCustomerActive(userId, isActive);
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not update customer." };
+  }
   revalidatePath("/admin/customers");
   return { ok: true };
 }

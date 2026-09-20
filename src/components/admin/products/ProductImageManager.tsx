@@ -37,7 +37,7 @@ export function ProductImageManager({ productId, initialImages }: { productId: s
           setError(result.error ?? "Upload failed.");
           continue;
         }
-        setImages((prev) => [...prev, { id: result.data!.url, url: result.data!.url }]);
+        setImages((prev) => [...prev, { id: result.data!.id, url: result.data!.url }]);
       }
     });
     if (inputRef.current) inputRef.current.value = "";

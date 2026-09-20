@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -11,15 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AdminCategory } from "@/lib/services/admin-category-service";
 import type { ProductFormValues } from "@/lib/services/admin-product-service";
-import { createProductAction, updateProductAction } from "@/lib/actions/admin/product-actions";
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+import { createProductAction, updateProductAction, previewSkuAction, checkSkuAvailableAction } from "@/lib/actions/admin/product-actions";
+import { slugify } from "@/lib/utils/slug";
 
 function TagListInput({ label, values, onChange, placeholder }: { label: string; values: string[]; onChange: (v: string[]) => void; placeholder: string }) {
   const [draft, setDraft] = useState("");
@@ -104,6 +97,9 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
   const router = useRouter();
   const [values, setValues] = useState<ProductFormValues>(initial ?? EMPTY);
   const [slugTouched, setSlugTouched] = useState(Boolean(initial));
+  const [skuTouched, setSkuTouched] = useState(Boolean(initial));
+  const [skuError, setSkuError] = useState<string | null>(null);
+  const [isGeneratingSku, startSkuTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -113,12 +109,50 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
     setValues((v) => ({ ...v, [key]: value }));
   }
 
+  // Auto-generates/refreshes the SKU from the slug while creating a new
+  // product — stops the moment the admin edits the SKU field themselves, and
+  // never runs at all when editing an existing product (its SKU is fixed).
+  useEffect(() => {
+    if (productId || skuTouched) return;
+    const slug = values.slug.trim();
+    if (!slug) return; // cleared synchronously by the change handlers below instead
+    const handle = setTimeout(() => {
+      startSkuTransition(async () => {
+        const result = await previewSkuAction(slug);
+        if (result.ok && result.data) set("sku", result.data.sku);
+      });
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [values.slug, skuTouched, productId]);
+
+  async function handleSkuBlur() {
+    const sku = values.sku.trim();
+    if (!sku) return;
+    if (initial && sku === initial.sku) {
+      setSkuError(null);
+      return;
+    }
+    const result = await checkSkuAvailableAction(sku, productId);
+    if (result.ok && result.data && !result.data.available) {
+      setSkuError(`SKU "${sku}" is already in use.`);
+    } else {
+      setSkuError(null);
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    if (values.price > values.mrp) {
+      setError("Price cannot be higher than MRP.");
+      return;
+    }
+
     startTransition(async () => {
-      const result = productId ? await updateProductAction(productId, values) : await createProductAction(values);
+      const result = productId
+        ? await updateProductAction(productId, values)
+        : await createProductAction(values, { autoSku: !skuTouched });
       if (!result.ok) {
         setError(result.error ?? "Something went wrong.");
         return;
@@ -145,7 +179,11 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
               value={values.name}
               onChange={(e) => {
                 set("name", e.target.value);
-                if (!slugTouched) set("slug", slugify(e.target.value));
+                if (!slugTouched) {
+                  const newSlug = slugify(e.target.value);
+                  set("slug", newSlug);
+                  if (!skuTouched && !newSlug) set("sku", "");
+                }
               }}
               className="h-10"
             />
@@ -158,13 +196,30 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
               onChange={(e) => {
                 setSlugTouched(true);
                 set("slug", e.target.value);
+                if (!skuTouched && !e.target.value.trim()) set("sku", "");
               }}
               className="h-10"
             />
           </div>
           <div>
             <Label className="mb-1.5 text-xs font-semibold text-ink-soft">SKU</Label>
-            <Input required value={values.sku} onChange={(e) => set("sku", e.target.value)} className="h-10" />
+            <Input
+              required
+              value={values.sku}
+              onChange={(e) => {
+                setSkuTouched(true);
+                setSkuError(null);
+                set("sku", e.target.value);
+              }}
+              onBlur={handleSkuBlur}
+              className="h-10"
+              aria-invalid={Boolean(skuError)}
+            />
+            {skuError ? (
+              <p className="mt-1 text-xs font-medium text-signal">{skuError}</p>
+            ) : !productId && !skuTouched ? (
+              <p className="mt-1 text-xs text-muted">{isGeneratingSku ? "Generating…" : "Auto-generated from the slug — you can edit it."}</p>
+            ) : null}
           </div>
           <div className="sm:col-span-2">
             <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Short Description</Label>

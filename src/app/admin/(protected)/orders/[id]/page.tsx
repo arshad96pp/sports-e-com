@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { getOrderById } from "@/lib/services/admin-order-service";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { OrderStatusSelect } from "@/components/admin/orders/OrderStatusSelect";
@@ -15,6 +17,10 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
 
   return (
     <div className="mx-auto max-w-3xl">
+      <Link href="/admin/orders" className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to Orders
+      </Link>
       <AdminPageHeader
         title={order.orderNumber}
         description={`Placed ${new Date(order.createdAt).toLocaleString("en-IN")}`}

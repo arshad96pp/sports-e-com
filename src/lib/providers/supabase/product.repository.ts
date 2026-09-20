@@ -1,16 +1,19 @@
 import "server-only";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createClient } from "@/lib/supabase/server";
+import { skuPrefixFromSlug } from "@/lib/utils/slug";
+import { isUniqueViolation } from "@/lib/utils/db-errors";
 import { getDiscountPercent } from "@/lib/data/products";
 import type { CategorySlug, Product, ProductSpec } from "@/lib/types";
 import type {
   AdminProductDetail,
+  AdminProductQueryParams,
+  AdminProductQueryResult,
   ProductFilterOptions,
   ProductFormValues,
   ProductQueryParams,
   ProductQueryResult,
   ProductRepository,
-  AdminProductListItem,
 } from "@/lib/core/ports/product.repository";
 
 // `category` uses an inner join (`!inner`) so a product row always carries
@@ -149,6 +152,31 @@ function toAdminRow(values: ProductFormValues) {
     seo_title: values.seoTitle || null,
     seo_description: values.seoDescription || null,
   };
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Next free `PREFIX-NNN` suffix for a given prefix, computed from the SKUs
+ * currently in the table (not a separate counter) — so it stays correct even
+ * if an admin hand-edits a SKU outside the normal `PREFIX-NNN` sequence.
+ * This alone is only a *hint*; the real uniqueness guarantee is the `sku`
+ * column's `unique` constraint, enforced at insert time (see `createProduct`).
+ */
+async function nextSkuNumber(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  prefix: string
+): Promise<number> {
+  const { data } = await supabase.from("products").select("sku").ilike("sku", `${prefix}-%`);
+  const re = new RegExp(`^${escapeRegExp(prefix)}-(\\d+)$`);
+  let max = 0;
+  for (const row of data ?? []) {
+    const match = re.exec(row.sku);
+    if (match) max = Math.max(max, parseInt(match[1], 10));
+  }
+  return max + 1;
 }
 
 export function createSupabaseProductRepository(): ProductRepository {
@@ -431,16 +459,56 @@ export function createSupabaseProductRepository(): ProductRepository {
       };
     },
 
-    async listProductsForAdmin(): Promise<AdminProductListItem[]> {
+    async listProductsForAdmin(params: AdminProductQueryParams = {}): Promise<AdminProductQueryResult> {
       const supabase = await createClient();
-      const { data } = await supabase
+      const page = Math.max(1, params.page ?? 1);
+      const pageSize = params.pageSize ?? 20;
+
+      let query = supabase
         .from("products")
         .select(
-          "id, name, sku, slug, brand, price, mrp, stock, is_active, is_featured, is_best_seller, category:categories(name), product_images(url, sort_order)"
-        )
-        .order("created_at", { ascending: false });
+          "id, name, sku, slug, brand, price, mrp, stock, is_active, is_featured, is_best_seller, category:categories(name), product_images(url, sort_order)",
+          { count: "exact" }
+        );
 
-      return ((data ?? []) as unknown as Array<{
+      if (params.search?.trim()) {
+        const like = `%${params.search.trim()}%`;
+        query = query.or(`name.ilike.${like},sku.ilike.${like},slug.ilike.${like}`);
+      }
+      if (params.categoryId) query = query.eq("category_id", params.categoryId);
+      if (params.status === "active") query = query.eq("is_active", true);
+      if (params.status === "inactive") query = query.eq("is_active", false);
+
+      switch (params.sort) {
+        case "oldest":
+          query = query.order("created_at", { ascending: true });
+          break;
+        case "name-asc":
+          query = query.order("name", { ascending: true });
+          break;
+        case "name-desc":
+          query = query.order("name", { ascending: false });
+          break;
+        case "price-low-high":
+          query = query.order("price", { ascending: true });
+          break;
+        case "price-high-low":
+          query = query.order("price", { ascending: false });
+          break;
+        case "stock-low-high":
+          query = query.order("stock", { ascending: true });
+          break;
+        case "newest":
+        default:
+          query = query.order("created_at", { ascending: false });
+      }
+
+      const from = (page - 1) * pageSize;
+      query = query.range(from, from + pageSize - 1);
+
+      const { data, count } = await query;
+
+      const products = ((data ?? []) as unknown as Array<{
         id: string;
         name: string;
         sku: string;
@@ -469,6 +537,14 @@ export function createSupabaseProductRepository(): ProductRepository {
         isBestSeller: p.is_best_seller,
         thumbnailUrl: [...(p.product_images ?? [])].sort((a, b) => a.sort_order - b.sort_order)[0]?.url ?? null,
       }));
+
+      return {
+        products,
+        total: count ?? products.length,
+        page,
+        pageSize,
+        pageCount: Math.max(1, Math.ceil((count ?? products.length) / pageSize)),
+      };
     },
 
     async getProductForAdmin(id: string): Promise<AdminProductDetail | null> {
@@ -512,36 +588,101 @@ export function createSupabaseProductRepository(): ProductRepository {
       };
     },
 
-    async createProduct(values: ProductFormValues): Promise<{ id: string }> {
+    async createProduct(values: ProductFormValues, options?: { autoSku?: boolean }): Promise<{ id: string }> {
       const supabase = await createClient();
-      const { data, error } = await supabase.from("products").insert(toAdminRow(values)).select("id").single();
-      if (error || !data) throw new Error(error?.message ?? "Could not create product.");
-      return { id: data.id };
+      const row = toAdminRow(values);
+
+      if (!options?.autoSku) {
+        const { data, error } = await supabase.from("products").insert(row).select("id").single();
+        if (error) {
+          if (isUniqueViolation(error, "sku")) {
+            throw new Error(`SKU "${values.sku}" is already in use. Choose a different SKU.`);
+          }
+          if (isUniqueViolation(error, "slug")) {
+            throw new Error(`Slug "${values.slug}" is already in use. Choose a different slug.`);
+          }
+          throw new Error(error.message);
+        }
+        if (!data) throw new Error("Could not create product.");
+        return { id: data.id };
+      }
+
+      // Auto-generated SKU: retry with the next number on a race against another
+      // concurrent create for the same prefix. The `sku` column's `unique`
+      // constraint is the actual safety net — this loop just recovers from it
+      // instead of failing the request.
+      const prefix = skuPrefixFromSlug(values.slug) || "PRODUCT";
+      let candidate = await nextSkuNumber(supabase, prefix);
+      const MAX_ATTEMPTS = 30;
+
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        const sku = `${prefix}-${String(candidate).padStart(3, "0")}`;
+        const { data, error } = await supabase.from("products").insert({ ...row, sku }).select("id").single();
+        if (!error && data) return { id: data.id };
+        if (error && isUniqueViolation(error, "slug")) {
+          throw new Error(`Slug "${values.slug}" is already in use. Choose a different slug.`);
+        }
+        if (error && !isUniqueViolation(error, "sku")) throw new Error(error.message);
+        candidate += 1;
+      }
+      throw new Error("Could not generate a unique SKU. Please enter one manually.");
     },
 
     async updateProduct(id: string, values: ProductFormValues): Promise<void> {
       const supabase = await createClient();
       const { error } = await supabase.from("products").update(toAdminRow(values)).eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isUniqueViolation(error, "sku")) {
+          throw new Error(`SKU "${values.sku}" is already in use. Choose a different SKU.`);
+        }
+        if (isUniqueViolation(error, "slug")) {
+          throw new Error(`Slug "${values.slug}" is already in use. Choose a different slug.`);
+        }
+        throw new Error(error.message);
+      }
     },
 
-    async deleteProduct(id: string): Promise<void> {
+    async previewNextSku(slugOrPrefix: string): Promise<string> {
       const supabase = await createClient();
+      const prefix = skuPrefixFromSlug(slugOrPrefix) || "PRODUCT";
+      const next = await nextSkuNumber(supabase, prefix);
+      return `${prefix}-${String(next).padStart(3, "0")}`;
+    },
+
+    async isSkuAvailable(sku: string, excludeId?: string): Promise<boolean> {
+      const supabase = await createClient();
+      let query = supabase.from("products").select("id").eq("sku", sku).limit(1);
+      if (excludeId) query = query.neq("id", excludeId);
+      const { data } = await query;
+      return (data?.length ?? 0) === 0;
+    },
+
+    async deleteProduct(id: string): Promise<{ imageUrls: string[] }> {
+      const supabase = await createClient();
+      // Read image URLs before the delete cascades away the `product_images` rows,
+      // so the caller can clean up the actual Storage objects (the DB FK only
+      // removes the rows, never the files they point at).
+      const { data: images } = await supabase.from("product_images").select("url").eq("product_id", id);
       const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw new Error(error.message);
+      return { imageUrls: (images ?? []).map((i) => i.url) };
     },
 
     async setProductActive(id: string, isActive: boolean): Promise<void> {
       const supabase = await createClient();
-      await supabase.from("products").update({ is_active: isActive }).eq("id", id);
+      const { error } = await supabase.from("products").update({ is_active: isActive }).eq("id", id);
+      if (error) throw new Error(error.message);
     },
 
-    async addProductImage(productId: string, url: string, altText: string, sortOrder: number): Promise<void> {
+    async addProductImage(productId: string, url: string, altText: string, sortOrder: number): Promise<{ id: string }> {
       const supabase = await createClient();
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("product_images")
-        .insert({ product_id: productId, url, alt_text: altText, sort_order: sortOrder });
-      if (error) throw new Error(error.message);
+        .insert({ product_id: productId, url, alt_text: altText, sort_order: sortOrder })
+        .select("id")
+        .single();
+      if (error || !data) throw new Error(error?.message ?? "Could not save image.");
+      return { id: data.id };
     },
 
     async deleteProductImage(imageId: string): Promise<void> {

@@ -43,6 +43,24 @@ export interface AdminOrderListItemDTO {
   createdAt: string;
 }
 
+export type AdminOrderSort = "newest" | "oldest" | "total-high-low" | "total-low-high";
+
+export interface AdminOrderQueryParams {
+  search?: string;
+  status?: OrderStatus;
+  sort?: AdminOrderSort;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminOrderQueryResult {
+  orders: AdminOrderListItemDTO[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
 export interface OrderLineInput {
   productId: string;
   quantity: number;
@@ -59,7 +77,7 @@ export interface OrderRepository {
 
   placeOrder(address: Address, lines: OrderLineInput[]): Promise<PlaceOrderResult>;
 
-  listOrders(): Promise<AdminOrderListItemDTO[]>;
+  listOrders(params?: AdminOrderQueryParams): Promise<AdminOrderQueryResult>;
   getOrderById(id: string): Promise<(OrderDTO & { addressPhone: string }) | null>;
   updateOrderStatus(orderId: string, status: OrderStatus): Promise<void>;
   hasPurchasedProduct(productId: string): Promise<boolean>;

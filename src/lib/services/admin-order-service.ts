@@ -1,13 +1,13 @@
 import "server-only";
 import { getOrderRepository } from "@/lib/config/providers";
 import type { OrderDTO, OrderStatus } from "@/lib/services/order-service";
-import type { AdminOrderListItemDTO } from "@/lib/core/ports/order.repository";
+import type { AdminOrderListItemDTO, AdminOrderQueryParams, AdminOrderQueryResult } from "@/lib/core/ports/order.repository";
 
-export type { AdminOrderListItemDTO };
+export type { AdminOrderListItemDTO, AdminOrderQueryParams, AdminOrderQueryResult };
 
 /** RLS-scoped: `orders_select_own_or_admin` lets a super admin read every row. */
-export async function listOrders(): Promise<AdminOrderListItemDTO[]> {
-  return getOrderRepository().listOrders();
+export async function listOrders(params?: AdminOrderQueryParams): Promise<AdminOrderQueryResult> {
+  return getOrderRepository().listOrders(params);
 }
 
 export async function getOrderById(id: string): Promise<(OrderDTO & { addressPhone: string }) | null> {

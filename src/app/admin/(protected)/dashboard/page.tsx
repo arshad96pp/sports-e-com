@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Package, Users, AlertTriangle } from "lucide-react";
+import { Package, Users, ShoppingCart, Clock, AlertTriangle } from "lucide-react";
 import { getDashboardStats } from "@/lib/services/admin-stats-service";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { StatCard } from "@/components/admin/StatCard";
@@ -15,9 +15,15 @@ export default async function AdminDashboardPage() {
     <div>
       <AdminPageHeader title="Dashboard" description="Store performance at a glance." />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard icon={Package} label="Total Products" value={String(stats.totalProducts)} />
         <StatCard icon={Users} label="Total Customers" value={String(stats.totalCustomers)} />
+        <Link href="/admin/orders" className="block transition-opacity hover:opacity-80">
+          <StatCard icon={ShoppingCart} label="Total Orders" value={String(stats.totalOrders)} />
+        </Link>
+        <Link href="/admin/orders?status=pending" className="block transition-opacity hover:opacity-80">
+          <StatCard icon={Clock} label="Pending Orders" value={String(stats.pendingOrders)} accent={stats.pendingOrders > 0} />
+        </Link>
       </div>
 
       <div className="mt-6 rounded-xl border border-border bg-white p-5">

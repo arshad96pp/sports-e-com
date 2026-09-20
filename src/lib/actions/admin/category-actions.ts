@@ -63,7 +63,11 @@ export async function uploadCategoryImageAction(categoryId: string, formData: Fo
   const result = await processAndUploadImage(file, "category-images", categoryId);
   if (!result.ok) return { ok: false, error: result.error };
 
-  await adminCategoryService.setCategoryImage(categoryId, result.publicUrl);
+  try {
+    await adminCategoryService.setCategoryImage(categoryId, result.publicUrl);
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not save image." };
+  }
   revalidateStorefront();
   revalidatePath("/admin/categories");
   return { ok: true, data: { url: result.publicUrl } };

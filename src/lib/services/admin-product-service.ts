@@ -1,26 +1,48 @@
 import "server-only";
 import { getProductRepository } from "@/lib/config/providers";
-import type { AdminProductDetail, AdminProductListItem, ProductFormValues } from "@/lib/core/ports/product.repository";
+import type {
+  AdminProductDetail,
+  AdminProductListItem,
+  AdminProductQueryParams,
+  AdminProductQueryResult,
+  ProductFormValues,
+} from "@/lib/core/ports/product.repository";
 
-export type { AdminProductDetail, AdminProductListItem, ProductFormValues };
+export type { AdminProductDetail, AdminProductListItem, AdminProductQueryParams, AdminProductQueryResult, ProductFormValues };
 
-export async function listProductsForAdmin(): Promise<AdminProductListItem[]> {
-  return getProductRepository().listProductsForAdmin();
+export async function listProductsForAdmin(params?: AdminProductQueryParams): Promise<AdminProductQueryResult> {
+  return getProductRepository().listProductsForAdmin(params);
 }
 
 export async function getProductForAdmin(id: string): Promise<AdminProductDetail | null> {
   return getProductRepository().getProductForAdmin(id);
 }
 
-export async function createProduct(values: ProductFormValues): Promise<{ id: string }> {
-  return getProductRepository().createProduct(values);
+function assertValidPricing(values: ProductFormValues): void {
+  if (values.price > values.mrp) {
+    throw new Error("Price cannot be higher than MRP.");
+  }
+}
+
+export async function createProduct(values: ProductFormValues, options?: { autoSku?: boolean }): Promise<{ id: string }> {
+  assertValidPricing(values);
+  return getProductRepository().createProduct(values, options);
+}
+
+export async function previewNextSku(slugOrPrefix: string): Promise<string> {
+  return getProductRepository().previewNextSku(slugOrPrefix);
+}
+
+export async function isSkuAvailable(sku: string, excludeId?: string): Promise<boolean> {
+  return getProductRepository().isSkuAvailable(sku, excludeId);
 }
 
 export async function updateProduct(id: string, values: ProductFormValues): Promise<void> {
+  assertValidPricing(values);
   return getProductRepository().updateProduct(id, values);
 }
 
-export async function deleteProduct(id: string): Promise<void> {
+export async function deleteProduct(id: string): Promise<{ imageUrls: string[] }> {
   return getProductRepository().deleteProduct(id);
 }
 
@@ -28,7 +50,7 @@ export async function setProductActive(id: string, isActive: boolean): Promise<v
   return getProductRepository().setProductActive(id, isActive);
 }
 
-export async function addProductImage(productId: string, url: string, altText: string, sortOrder: number): Promise<void> {
+export async function addProductImage(productId: string, url: string, altText: string, sortOrder: number): Promise<{ id: string }> {
   return getProductRepository().addProductImage(productId, url, altText, sortOrder);
 }
 

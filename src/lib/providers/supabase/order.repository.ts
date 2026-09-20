@@ -2,7 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Address } from "@/lib/types";
 import type {
-  AdminOrderListItemDTO,
+  AdminOrderQueryParams,
+  AdminOrderQueryResult,
   OrderDTO,
   OrderLineInput,
   OrderRepository,
@@ -51,11 +52,40 @@ export function createSupabaseOrderRepository(): OrderRepository {
     },
 
     /** RLS-scoped: `orders_select_own_or_admin` lets a super admin read every row. */
-    async listOrders(): Promise<AdminOrderListItemDTO[]> {
+    async listOrders(params: AdminOrderQueryParams = {}): Promise<AdminOrderQueryResult> {
       const supabase = await createClient();
-      const { data } = await supabase.from("orders").select(LIST_SELECT).order("created_at", { ascending: false });
+      const page = Math.max(1, params.page ?? 1);
+      const pageSize = params.pageSize ?? 20;
 
-      return (data ?? []).map((o) => ({
+      let query = supabase.from("orders").select(LIST_SELECT, { count: "exact" });
+
+      if (params.search?.trim()) {
+        const like = `%${params.search.trim()}%`;
+        query = query.or(`order_number.ilike.${like},address_full_name.ilike.${like}`);
+      }
+      if (params.status) query = query.eq("status", params.status);
+
+      switch (params.sort) {
+        case "oldest":
+          query = query.order("created_at", { ascending: true });
+          break;
+        case "total-high-low":
+          query = query.order("total", { ascending: false });
+          break;
+        case "total-low-high":
+          query = query.order("total", { ascending: true });
+          break;
+        case "newest":
+        default:
+          query = query.order("created_at", { ascending: false });
+      }
+
+      const from = (page - 1) * pageSize;
+      query = query.range(from, from + pageSize - 1);
+
+      const { data, count } = await query;
+
+      const orders = (data ?? []).map((o) => ({
         id: o.id,
         orderNumber: o.order_number,
         status: o.status,
@@ -64,6 +94,14 @@ export function createSupabaseOrderRepository(): OrderRepository {
         customerName: o.address_full_name,
         createdAt: o.created_at,
       }));
+
+      return {
+        orders,
+        total: count ?? orders.length,
+        page,
+        pageSize,
+        pageCount: Math.max(1, Math.ceil((count ?? orders.length) / pageSize)),
+      };
     },
 
     async getOrderById(id: string): Promise<(OrderDTO & { addressPhone: string }) | null> {
