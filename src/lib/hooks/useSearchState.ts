@@ -37,9 +37,15 @@ export function useSearchState(open: boolean) {
   useEffect(() => {
     if (!open || idleFetchedRef.current) return;
     idleFetchedRef.current = true;
-    getSearchIdleContentAction().then(({ bestSellers }) => {
-      setBestSellers(bestSellers);
-    });
+    getSearchIdleContentAction()
+      .then(({ bestSellers }) => {
+        setBestSellers(bestSellers);
+      })
+      .catch(() => {
+        // Non-critical: idle bestsellers are supplementary content, so a
+        // failure here just leaves that section empty instead of surfacing
+        // an unhandled rejection.
+      });
   }, [open]);
 
   useEffect(() => {
@@ -54,12 +60,22 @@ export function useSearchState(open: boolean) {
     setStatus("loading");
     let cancelled = false;
     const timer = setTimeout(() => {
-      searchSuggestionsAction(query).then(({ products, categories }) => {
-        if (cancelled) return;
-        setMatchingProducts(products);
-        setMatchingCategories(categories);
-        setStatus(products.length === 0 && categories.length === 0 ? "no-results" : "results");
-      });
+      searchSuggestionsAction(query)
+        .then(({ products, categories }) => {
+          if (cancelled) return;
+          setMatchingProducts(products);
+          setMatchingCategories(categories);
+          setStatus(products.length === 0 && categories.length === 0 ? "no-results" : "results");
+        })
+        .catch(() => {
+          if (cancelled) return;
+          // Falls back to the existing "no results" UI rather than a
+          // dedicated error state so a transient failure never leaves the
+          // overlay stuck on its loading spinner forever.
+          setMatchingProducts([]);
+          setMatchingCategories([]);
+          setStatus("no-results");
+        });
     }, DEBOUNCE_MS);
 
     return () => {

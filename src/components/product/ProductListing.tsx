@@ -23,6 +23,14 @@ interface ProductListingProps {
   description?: string;
   breadcrumbs: Crumb[];
   emptyLabel?: string;
+  /**
+   * Hides the filter sidebar/drawer/sort control entirely. Used by the
+   * search page while `q` is empty — filters have no effect until a query
+   * is entered (the page always renders an empty result set until then), so
+   * showing interactive-looking controls that silently do nothing would be
+   * a broken UI, not just an unfiltered one.
+   */
+  hideFilters?: boolean;
 }
 
 export function ProductListing({
@@ -35,6 +43,7 @@ export function ProductListing({
   description,
   breadcrumbs,
   emptyLabel = "No products match your filters",
+  hideFilters = false,
 }: ProductListingProps) {
   const { filters, sort, setSort, setPage, activeCount, actions } = useProductFilterParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -62,31 +71,35 @@ export function ProductListing({
       </div>
 
       <div className="flex gap-6">
-        <FilterSidebar
-          filters={filters}
-          priceBounds={priceBounds}
-          options={options}
-          actions={actions}
-          activeCount={activeCount}
-        />
+        {!hideFilters && (
+          <FilterSidebar
+            filters={filters}
+            priceBounds={priceBounds}
+            options={options}
+            actions={actions}
+            activeCount={activeCount}
+          />
+        )}
 
         <div className="min-w-0 flex-1">
-          <div className="mb-4 flex items-center justify-between gap-2 sm:justify-end">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              className="tap-target flex items-center gap-1.5 rounded-full border border-border-strong px-3.5 text-xs font-semibold text-ink sm:px-4 sm:text-sm lg:hidden"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filters
-              {activeCount > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-ink">
-                  {activeCount}
-                </span>
-              )}
-            </button>
-            <SortSelect value={sort} onChange={setSort} />
-          </div>
+          {!hideFilters && (
+            <div className="mb-4 flex items-center justify-between gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="tap-target flex items-center gap-1.5 rounded-full border border-border-strong px-3.5 text-xs font-semibold text-ink sm:px-4 sm:text-sm lg:hidden"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Filters
+                {activeCount > 0 && (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-ink">
+                    {activeCount}
+                  </span>
+                )}
+              </button>
+              <SortSelect value={sort} onChange={setSort} />
+            </div>
+          )}
 
           {products.length > 0 ? (
             <>
@@ -97,27 +110,31 @@ export function ProductListing({
             <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-surface px-6 py-20 text-center">
               <SearchX className="mb-4 h-10 w-10 text-muted-soft" strokeWidth={1.5} />
               <p className="font-medium text-ink">{emptyLabel}</p>
-              <button
-                type="button"
-                onClick={actions.clearAll}
-                className="mt-4 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white"
-              >
-                Clear All Filters
-              </button>
+              {!hideFilters && (
+                <button
+                  type="button"
+                  onClick={actions.clearAll}
+                  className="mt-4 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white"
+                >
+                  Clear All Filters
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <FilterDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        filters={filters}
-        priceBounds={priceBounds}
-        options={options}
-        actions={actions}
-        resultCount={total}
-      />
+      {!hideFilters && (
+        <FilterDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          filters={filters}
+          priceBounds={priceBounds}
+          options={options}
+          actions={actions}
+          resultCount={total}
+        />
+      )}
     </div>
   );
 }

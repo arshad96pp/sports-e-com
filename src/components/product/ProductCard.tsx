@@ -70,13 +70,14 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
             <button
               type="button"
-              aria-label={`Add ${product.name} to cart`}
+              aria-label={product.inStock ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+              disabled={!product.inStock}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name });
               }}
-              className="flex h-8 w-8 cursor-pointer shrink-0 items-center justify-center rounded-full border border-ink bg-ink text-white shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-accent hover:bg-accent hover:text-accent-ink hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 sm:h-10 sm:w-10"
+              className="flex h-8 w-8 cursor-pointer shrink-0 items-center justify-center rounded-full border border-ink bg-ink text-white shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-accent hover:bg-accent hover:text-accent-ink hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 disabled:cursor-not-allowed disabled:border-border-strong disabled:bg-border-strong disabled:text-muted-soft disabled:hover:border-border-strong disabled:hover:bg-border-strong disabled:hover:text-muted-soft sm:h-10 sm:w-10"
             >
               <ShoppingCart className="h-4 w-4" strokeWidth={1.75} />
             </button>

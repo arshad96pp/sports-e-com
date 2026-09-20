@@ -11,6 +11,7 @@ import { formatDate, formatPrice } from "@/lib/utils/format";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { ProductArt } from "@/components/product/ProductArt";
+import { FALLBACK_PRODUCT_IMAGE } from "@/components/product/ProductPhoto";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { PriceBlock } from "@/components/ui/PriceBlock";
@@ -33,6 +34,10 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
   const [quantity, setQuantity] = useState(1);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [zoomed, setZoomed] = useState(false);
+  // Tracks gallery images whose Storage object 404s/fails to load (a stale
+  // DB row pointing at a deleted file) — swaps just that image to the shared
+  // placeholder instead of the browser's broken-image icon.
+  const [brokenImages, setBrokenImages] = useState<Record<number, boolean>>({});
 
   const { addItem } = useCart();
   const { openBuyNow } = useBuyNow();
@@ -40,6 +45,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
   const [reviewList, setReviewList] = useState(reviews);
 
   const activePhoto = product.images[activeImage] ?? product.images[0];
+  const activePhotoSrc = brokenImages[activeImage] ? FALLBACK_PRODUCT_IMAGE : activePhoto?.url;
 
   function handleAddToCart() {
     addItem(product.id, { quantity, size, color, productName: product.name });
@@ -88,9 +94,9 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
             onMouseEnter={() => setZoomed(true)}
             onMouseLeave={() => setZoomed(false)}
           >
-            {activePhoto ? (
+            {activePhoto && activePhotoSrc ? (
               <Image
-                src={activePhoto.url}
+                src={activePhotoSrc}
                 alt={activePhoto.alt}
                 fill
                 priority
@@ -100,6 +106,9 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
                   transform: zoomed ? "scale(1.6)" : "scale(1)",
                   transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
                 }}
+                onError={() =>
+                  setBrokenImages((prev) => (prev[activeImage] ? prev : { ...prev, [activeImage]: true }))
+                }
               />
             ) : (
               <ProductArt product={product} className="absolute inset-0 h-full w-full" />
@@ -123,7 +132,14 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
                     activeImage === i ? "border-ink" : "border-border"
                   }`}
                 >
-                  <Image src={img.url} alt={img.alt} fill sizes="80px" className="object-cover" />
+                  <Image
+                    src={brokenImages[i] ? FALLBACK_PRODUCT_IMAGE : img.url}
+                    alt={img.alt}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                    onError={() => setBrokenImages((prev) => (prev[i] ? prev : { ...prev, [i]: true }))}
+                  />
                 </button>
               ))}
             </div>
@@ -138,7 +154,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
           </h1>
           <div className="mt-2.5 flex items-center gap-3">
             <RatingStars rating={product.rating} reviewCount={product.reviewCount} size="md" />
-            <span className="text-xs font-medium text-success">
+            <span className={`text-xs font-medium ${product.inStock ? "text-success" : "text-signal"}`}>
               {product.inStock ? "In Stock" : "Out of Stock"}
             </span>
           </div>
@@ -201,14 +217,16 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
             <button
               type="button"
               onClick={handleAddToCart}
-              className="tap-target flex-1 rounded-full border-2 border-ink text-sm font-bold text-ink transition-colors hover:bg-surface"
+              disabled={!product.inStock}
+              className="tap-target flex-1 rounded-full border-2 border-ink text-sm font-bold text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:border-border-strong disabled:text-muted-soft disabled:hover:bg-transparent"
             >
-              Add to Cart
+              {product.inStock ? "Add to Cart" : "Out of Stock"}
             </button>
             <button
               type="button"
               onClick={handleBuyNow}
-              className="tap-target flex-1 rounded-full bg-ink text-sm font-bold text-white transition-transform active:scale-[0.98]"
+              disabled={!product.inStock}
+              className="tap-target flex-1 rounded-full bg-ink text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-border-strong disabled:text-muted-soft disabled:active:scale-100"
             >
               Buy Now
             </button>

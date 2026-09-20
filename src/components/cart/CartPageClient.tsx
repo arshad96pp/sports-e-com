@@ -18,7 +18,8 @@ export function CartPageClient() {
   const { openBuyNow } = useBuyNow();
 
   const productIds = useMemo(() => items.map((i) => i.productId), [items]);
-  const { products, loading: productsLoading } = useProductsByIds(productIds);
+  const { products, loading: productsLoading, error: productsError, retry: retryProducts } =
+    useProductsByIds(productIds);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (isInitialized && !productsLoading) {
@@ -71,6 +72,21 @@ export function CartPageClient() {
         <h1 className="mb-8 text-center font-display text-xl font-light tracking-[0.15em] text-ink sm:mb-12 sm:text-2xl md:mb-20 md:text-4xl">
           Shopping Cart
         </h1>
+
+        {productsError && items.length > 0 && (
+          <div className="mb-8 flex flex-col items-center gap-2 rounded-xl border border-border/60 bg-surface px-4 py-4 text-center sm:flex-row sm:justify-between">
+            <p role="alert" className="text-sm text-muted">
+              We couldn&apos;t load your cart items. Please try again.
+            </p>
+            <button
+              type="button"
+              onClick={retryProducts}
+              className="shrink-0 rounded-full border border-ink/20 px-4 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {items.length === 0 ? (
           <div className="py-20 text-center lg:py-32">

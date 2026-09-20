@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Heart, ShoppingBag, Info } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Heart, ShoppingBag, Info } from "lucide-react";
 import { useToast, type ToastKind } from "@/lib/context/ToastContext";
 
 const ICONS: Record<ToastKind, React.ComponentType<{ className?: string }>> = {
@@ -8,6 +8,7 @@ const ICONS: Record<ToastKind, React.ComponentType<{ className?: string }>> = {
   wishlist: Heart,
   success: CheckCircle2,
   info: Info,
+  error: AlertTriangle,
 };
 
 export function ToastViewport() {

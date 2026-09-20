@@ -53,6 +53,7 @@ export function QuickViewModal() {
                 <PriceBlock price={product.price} mrp={product.mrp} size="md" />
                 {discount > 0 && <p className="mt-1 text-xs text-muted">You save on this deal</p>}
               </div>
+              {!product.inStock && <p className="mt-2 text-xs font-medium text-signal">Out of Stock</p>}
               <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-soft">{product.description}</p>
 
               {product.sizes.length > 0 && (
@@ -86,9 +87,10 @@ export function QuickViewModal() {
                     addItem(product.id, { quantity, size, productName: product.name });
                     closeQuickView();
                   }}
+                  disabled={!product.inStock}
                   className="h-11 flex-1 rounded-full text-sm font-bold"
                 >
-                  Add to Cart
+                  {product.inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
                 <Button asChild variant="outline" className="h-11 flex-1 rounded-full text-sm font-semibold">
                   <Link href={`/product/${product.slug}`} onClick={closeQuickView}>

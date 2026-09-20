@@ -33,6 +33,7 @@ export default async function SearchPage(props: PageProps<"/search">) {
       description={q ? undefined : "Try searching for a product, brand or category."}
       breadcrumbs={[{ label: "Home", href: "/" }, { label: "Search" }]}
       emptyLabel={q ? `No products found for "${q}"` : "Start typing to search our catalogue"}
+      hideFilters={!q.trim()}
     />
   );
 }

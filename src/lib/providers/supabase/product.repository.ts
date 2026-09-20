@@ -374,12 +374,27 @@ export function createSupabaseProductRepository(): ProductRepository {
         }
       }
 
+      // Resolve subcategory names to ids so the filter can be applied
+      // server-side against the real `subcategory_id` FK column (indexed),
+      // the same way `category` is resolved above — this keeps `count`/
+      // `range()` pagination exact instead of filtering the joined name
+      // client-side after the page has already been fetched.
+      let subcategoryIds: string[] | null = null;
+      if (params.subcategories?.length) {
+        const { data } = await supabase.from("subcategories").select("id").in("name", params.subcategories);
+        subcategoryIds = (data ?? []).map((r) => r.id);
+        if (subcategoryIds.length === 0) {
+          return { products: [], total: 0, page, pageSize, pageCount: 1 };
+        }
+      }
+
       let query = supabase
         .from("products")
         .select(PRODUCT_LIST_SELECT, { count: "exact" })
         .eq("is_active", true);
 
       if (categoryId) query = query.eq("category_id", categoryId);
+      if (subcategoryIds) query = query.in("subcategory_id", subcategoryIds);
       if (params.featured) query = query.eq("is_featured", true);
       if (params.bestSeller) query = query.eq("is_best_seller", true);
       if (params.dealOfTheDay) query = query.eq("is_deal_of_the_day", true);
@@ -395,6 +410,34 @@ export function createSupabaseProductRepository(): ProductRepository {
       if (params.inStockOnly) query = query.gt("stock", 0);
       if (params.priceMin != null) query = query.gte("price", params.priceMin);
       if (params.priceMax != null) query = query.lte("price", params.priceMax);
+
+      // Discount has no DB column to filter/sort on (it's derived from
+      // price/mrp at read time), so it can't be pushed into `count`/`range()`
+      // like the other filters. When it's in play, fetch every row matching
+      // every other filter (still narrowed server-side above), then filter/
+      // sort/paginate in memory so `total`/`pageCount` stay correct and
+      // discount ordering is consistent across page boundaries.
+      const needsInMemoryDiscount = Boolean(params.minDiscount) || params.sort === "discount";
+
+      if (needsInMemoryDiscount) {
+        const { data } = await query;
+        let products = ((data as unknown as ProductRow[]) ?? []).map(toDTO);
+        if (params.minDiscount) {
+          products = products.filter((p) => getDiscountPercent(p) >= params.minDiscount!);
+        }
+        if (params.sort === "discount") {
+          products = [...products].sort((a, b) => getDiscountPercent(b) - getDiscountPercent(a));
+        }
+        const total = products.length;
+        const from = (page - 1) * pageSize;
+        return {
+          products: products.slice(from, from + pageSize),
+          total,
+          page,
+          pageSize,
+          pageCount: Math.max(1, Math.ceil(total / pageSize)),
+        };
+      }
 
       switch (params.sort) {
         case "newest":
@@ -412,11 +455,6 @@ export function createSupabaseProductRepository(): ProductRepository {
         case "rating":
           query = query.order("rating", { ascending: false });
           break;
-        case "discount":
-          // No generated discount column to sort on server-side; approximate with
-          // rating+bestseller as a reasonable proxy, then refine client-side per page.
-          query = query.order("is_best_seller", { ascending: false }).order("rating", { ascending: false });
-          break;
         case "recommended":
         default:
           query = query
@@ -426,29 +464,12 @@ export function createSupabaseProductRepository(): ProductRepository {
           break;
       }
 
-      // category_id (a real column) is filtered server-side above, so range()
-      // pagination against `count` is now exact for it. Subcategory is only
-      // available here as a joined name (no id to filter server-side on), so
-      // it's still applied client-side after the page is fetched — pages with
-      // a subcategory filter applied may return fewer than `pageSize` results.
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
       query = query.range(from, to);
 
       const { data, count } = await query;
-      let rows = (data as unknown as ProductRow[]) ?? [];
-
-      if (params.subcategories?.length) {
-        rows = rows.filter((r) => r.subcategory?.name && params.subcategories!.includes(r.subcategory.name));
-      }
-
-      let products = rows.map(toDTO);
-      if (params.minDiscount) {
-        products = products.filter((p) => getDiscountPercent(p) >= params.minDiscount!);
-      }
-      if (params.sort === "discount") {
-        products = [...products].sort((a, b) => getDiscountPercent(b) - getDiscountPercent(a));
-      }
+      const products = ((data as unknown as ProductRow[]) ?? []).map(toDTO);
 
       return {
         products,

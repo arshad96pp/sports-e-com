@@ -44,24 +44,29 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
     let cancelled = false;
     (async () => {
-      if (!mergedRef.current) {
-        mergedRef.current = true;
-        const guestIds = readStorage<string[]>(STORAGE_KEY, []);
-        if (guestIds.length > 0) {
-          await mergeWishlistAction(guestIds);
-          writeStorage(STORAGE_KEY, []);
+      try {
+        if (!mergedRef.current) {
+          mergedRef.current = true;
+          const guestIds = readStorage<string[]>(STORAGE_KEY, []);
+          if (guestIds.length > 0) {
+            await mergeWishlistAction(guestIds);
+            writeStorage(STORAGE_KEY, []);
+          }
         }
-      }
-      const dbIds = await getWishlistAction();
-      if (!cancelled) {
-        setProductIds(dbIds);
-        setHydrated(true);
+        const dbIds = await getWishlistAction();
+        if (!cancelled) setProductIds(dbIds);
+      } catch {
+        if (!cancelled) showToast("Couldn't load your wishlist. Please refresh.", "error");
+      } finally {
+        // Always settles `hydrated`, even on failure, so the wishlist page
+        // never gets stuck on its skeleton forever.
+        if (!cancelled) setHydrated(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [status, isAuthed]);
+  }, [status, isAuthed, showToast]);
 
   useEffect(() => {
     if (hydrated && !isAuthed) writeStorage(STORAGE_KEY, productIds);
@@ -75,7 +80,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       setProductIds((prev) =>
         exists ? prev.filter((id) => id !== productId) : [...prev, productId]
       );
-      if (isAuthed) void toggleWishlistAction(productId);
+      if (isAuthed) {
+        toggleWishlistAction(productId).catch(() => {
+          showToast("Couldn't sync your wishlist. Please refresh and try again.", "error");
+        });
+      }
       showToast(exists ? "Removed from wishlist" : "Added to wishlist", "wishlist");
     },
     [productIds, isAuthed, showToast]
@@ -84,9 +93,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const remove = useCallback(
     (productId: string) => {
       setProductIds((prev) => prev.filter((id) => id !== productId));
-      if (isAuthed) void removeWishlistItemAction(productId);
+      if (isAuthed) {
+        removeWishlistItemAction(productId).catch(() => {
+          showToast("Couldn't sync your wishlist. Please refresh and try again.", "error");
+        });
+      }
     },
-    [isAuthed]
+    [isAuthed, showToast]
   );
 
   const value = useMemo(

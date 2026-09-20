@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useState } from "react";
 
-export type ToastKind = "cart" | "wishlist" | "success" | "info";
+export type ToastKind = "cart" | "wishlist" | "success" | "info" | "error";
 
 export interface ToastMessage {
   id: number;

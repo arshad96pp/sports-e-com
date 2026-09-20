@@ -74,24 +74,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     let cancelled = false;
     (async () => {
-      if (!mergedRef.current) {
-        mergedRef.current = true;
-        const guestItems = readStorage<CartItem[]>(STORAGE_KEY, []);
-        if (guestItems.length > 0) {
-          await mergeCartAction(guestItems);
-          writeStorage(STORAGE_KEY, []);
+      try {
+        if (!mergedRef.current) {
+          mergedRef.current = true;
+          const guestItems = readStorage<CartItem[]>(STORAGE_KEY, []);
+          if (guestItems.length > 0) {
+            await mergeCartAction(guestItems);
+            writeStorage(STORAGE_KEY, []);
+          }
         }
-      }
-      const dbItems = await getCartAction();
-      if (!cancelled) {
-        setItems(dbItems);
-        setHydrated(true);
+        const dbItems = await getCartAction();
+        if (!cancelled) setItems(dbItems);
+      } catch {
+        if (!cancelled) showToast("Couldn't load your cart. Please refresh.", "error");
+      } finally {
+        // Always settles `hydrated`, even on failure, so the cart page never
+        // gets stuck on its skeleton forever.
+        if (!cancelled) setHydrated(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [status, isAuthed]);
+  }, [status, isAuthed, showToast]);
 
   useEffect(() => {
     if (hydrated && !isAuthed) writeStorage(STORAGE_KEY, items);
@@ -116,7 +121,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return [...prev, { productId, quantity, size, color }];
       });
 
-      if (isAuthed) void addCartItemAction(productId, quantity, size, color);
+      if (isAuthed) {
+        addCartItemAction(productId, quantity, size, color).catch(() => {
+          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
+        });
+      }
       showToast(`${opts?.productName ?? "Item"} added to cart`, "cart");
     },
     [isAuthed, showToast]
@@ -126,9 +135,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     (productId, size, color) => {
       const key = cartKey(productId, size, color);
       setItems((prev) => prev.filter((i) => cartKey(i.productId, i.size, i.color) !== key));
-      if (isAuthed) void removeCartItemAction(productId, size, color);
+      if (isAuthed) {
+        removeCartItemAction(productId, size, color).catch(() => {
+          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
+        });
+      }
     },
-    [isAuthed]
+    [isAuthed, showToast]
   );
 
   const updateQuantity = useCallback<CartContextValue["updateQuantity"]>(
@@ -141,9 +154,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               cartKey(i.productId, i.size, i.color) === key ? { ...i, quantity } : i
             )
       );
-      if (isAuthed) void setCartItemQuantityAction(productId, size, color, quantity);
+      if (isAuthed) {
+        setCartItemQuantityAction(productId, size, color, quantity).catch(() => {
+          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
+        });
+      }
     },
-    [isAuthed]
+    [isAuthed, showToast]
   );
 
   const clear = useCallback(async () => {
