@@ -5,7 +5,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { updateOrderStatusAction } from "@/lib/actions/admin/order-actions";
 import type { OrderStatus } from "@/lib/services/order-service";
 
-const STATUSES: OrderStatus[] = ["placed", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+const STATUSES: OrderStatus[] = [
+  "pending_whatsapp",
+  "confirmed",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+];
+
+const STATUS_LABELS: Record<OrderStatus, string> = {
+  pending_whatsapp: "Pending WhatsApp",
+  confirmed: "Confirmed",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
+/** Keeps pending/confirmed/cancelled visually distinct using the existing brand color tokens. */
+const STATUS_STYLES: Record<OrderStatus, string> = {
+  pending_whatsapp: "border-accent bg-accent-soft text-ink",
+  confirmed: "border-success/30 bg-success-soft text-success",
+  processing: "border-border bg-surface text-ink-soft",
+  shipped: "border-border bg-surface text-ink-soft",
+  delivered: "border-border bg-surface text-ink-soft",
+  cancelled: "border-signal/30 bg-signal-soft text-signal",
+};
 
 export function OrderStatusSelect({ orderId, status }: { orderId: string; status: OrderStatus }) {
   const [isPending, startTransition] = useTransition();
@@ -18,13 +44,13 @@ export function OrderStatusSelect({ orderId, status }: { orderId: string; status
 
   return (
     <Select value={status} onValueChange={handleChange} disabled={isPending}>
-      <SelectTrigger className="h-9 w-40 capitalize">
-        <SelectValue />
+      <SelectTrigger className={`h-9 w-44 font-medium ${STATUS_STYLES[status]}`}>
+        <SelectValue>{STATUS_LABELS[status]}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {STATUSES.map((s) => (
-          <SelectItem key={s} value={s} className="capitalize">
-            {s}
+          <SelectItem key={s} value={s}>
+            {STATUS_LABELS[s]}
           </SelectItem>
         ))}
       </SelectContent>

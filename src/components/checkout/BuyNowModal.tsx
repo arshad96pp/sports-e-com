@@ -151,7 +151,10 @@ export function BuyNowModal() {
       if (clearCartAfter) void clearCart();
 
       window.open(result.whatsappUrl, "_blank", "noopener,noreferrer");
-      showToast("Your order details are ready in WhatsApp. Please send the message to the store to complete your request.", "success");
+      showToast(
+        `Order ${result.orderNumber} request created. Please send the message on WhatsApp to complete your order.`,
+        "success"
+      );
       closeBuyNow();
     });
   }

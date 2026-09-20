@@ -945,7 +945,7 @@ export type Database = {
     }
     Enums: {
       order_status:
-        | "placed"
+        | "pending_whatsapp"
         | "confirmed"
         | "processing"
         | "shipped"
@@ -1083,7 +1083,7 @@ export const Constants = {
   public: {
     Enums: {
       order_status: [
-        "placed",
+        "pending_whatsapp",
         "confirmed",
         "processing",
         "shipped",
