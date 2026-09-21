@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateOrderStatusAction } from "@/lib/actions/admin/order-actions";
+import { useToast } from "@/lib/context/ToastContext";
 import type { OrderStatus } from "@/lib/services/order-service";
 
 const STATUSES: OrderStatus[] = ["pending", "confirmed", "shipped", "cancelled"];
@@ -24,10 +25,16 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
 
 export function OrderStatusSelect({ orderId, status }: { orderId: string; status: OrderStatus }) {
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   function handleChange(next: string) {
     startTransition(async () => {
-      await updateOrderStatusAction(orderId, next as OrderStatus);
+      const result = await updateOrderStatusAction(orderId, next as OrderStatus);
+      if (!result.ok) {
+        showToast(result.error ?? "Failed to update order status", "error");
+        return;
+      }
+      showToast(`Order status updated to ${STATUS_LABELS[next as OrderStatus]}`, "success");
     });
   }
 

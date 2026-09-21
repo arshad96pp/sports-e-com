@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import type { AdminCategory } from "@/lib/services/admin-category-service";
 import type { ProductFormValues } from "@/lib/services/admin-product-service";
 import { createProductAction, updateProductAction, previewSkuAction, checkSkuAvailableAction } from "@/lib/actions/admin/product-actions";
 import { slugify } from "@/lib/utils/slug";
+import { useToast } from "@/lib/context/ToastContext";
 
 function TagListInput({ label, values, onChange, placeholder }: { label: string; values: string[]; onChange: (v: string[]) => void; placeholder: string }) {
   const [draft, setDraft] = useState("");
@@ -105,6 +106,7 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
   const [isGeneratingSku, startSkuTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   const category = categories.find((c) => c.id === values.categoryId);
 
@@ -162,9 +164,12 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
         ? await updateProductAction(productId, values)
         : await createProductAction(values, { autoSku: !skuTouched });
       if (!result.ok) {
-        setError(result.error ?? "Something went wrong.");
+        const message = result.error ?? (productId ? "Failed to update product" : "Failed to create product");
+        setError(message);
+        showToast(message, "error");
         return;
       }
+      showToast(productId ? "Product updated successfully" : "Product created successfully", "success");
       if (!productId && result.data) {
         router.push(`/admin/products/${result.data.id}/edit`);
       } else {
@@ -402,7 +407,8 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
 
       <div className="flex justify-end gap-3">
         <Button type="submit" disabled={isPending} className="h-11 rounded-full px-8 text-sm font-bold">
-          {isPending ? "Saving…" : productId ? "Save Changes" : "Create Product"}
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isPending ? (productId ? "Saving…" : "Creating…") : productId ? "Save Changes" : "Create Product"}
         </Button>
       </div>
     </form>

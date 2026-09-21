@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Plus, Upload } from "lucide-react";
+import { Loader2, Plus, Upload } from "lucide-react";
 import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
   AdminModalContent,
@@ -19,6 +19,7 @@ import type { AdminCategory } from "@/lib/services/admin-category-service";
 import type { CategoryFormValues } from "@/lib/services/admin-category-service";
 import { createCategoryAction, updateCategoryAction, uploadCategoryImageAction } from "@/lib/actions/admin/category-actions";
 import { optimizeImageForUpload } from "@/lib/utils/client-image";
+import { useToast } from "@/lib/context/ToastContext";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -58,6 +59,7 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   function set<K extends keyof CategoryFormValues>(key: K, value: CategoryFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -69,7 +71,9 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
     startTransition(async () => {
       const result = category ? await updateCategoryAction(category.id, values) : await createCategoryAction(values);
       if (!result.ok) {
-        setError(result.error ?? "Something went wrong.");
+        const message = result.error ?? (category ? "Failed to update category" : "Failed to create category");
+        setError(message);
+        showToast(message, "error");
         return;
       }
       const selectedFile = fileRef.current?.files?.[0];
@@ -78,12 +82,19 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
         const optimized = await optimizeImageForUpload(selectedFile);
         if (!optimized.ok) {
           setError(optimized.error);
+          showToast(optimized.error, "error");
           return;
         }
         const formData = new FormData();
         formData.set("file", optimized.file);
-        await uploadCategoryImageAction(categoryId, formData);
+        const uploadResult = await uploadCategoryImageAction(categoryId, formData);
+        if (!uploadResult.ok) {
+          setError(uploadResult.error ?? "Failed to upload category image");
+          showToast(uploadResult.error ?? "Failed to upload category image", "error");
+          return;
+        }
       }
+      showToast(category ? "Category updated successfully" : "Category created successfully", "success");
       setOpen(false);
     });
   }
@@ -159,7 +170,8 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending} className="rounded-full">
-              {isPending ? "Saving…" : category ? "Save Changes" : "Create Category"}
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPending ? (category ? "Saving…" : "Creating…") : category ? "Save Changes" : "Create Category"}
             </Button>
           </AdminModalFooter>
         </form>

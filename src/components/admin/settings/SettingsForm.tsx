@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { StoreSettingsDTO } from "@/lib/services/settings-service";
 import { updateStoreSettingsAction } from "@/lib/actions/admin/settings-actions";
+import { useToast } from "@/lib/context/ToastContext";
 
 export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
   const [values, setValues] = useState(initial);
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   function set<K extends keyof StoreSettingsDTO>(key: K, value: StoreSettingsDTO[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -21,7 +24,14 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
     setMessage(null);
     startTransition(async () => {
       const result = await updateStoreSettingsAction(values);
-      setMessage(result.ok ? { type: "ok", text: "Settings saved." } : { type: "error", text: result.error ?? "Could not save." });
+      if (!result.ok) {
+        const text = result.error ?? "Failed to save settings";
+        setMessage({ type: "error", text });
+        showToast(text, "error");
+        return;
+      }
+      setMessage({ type: "ok", text: "Settings saved." });
+      showToast("Settings saved successfully", "success");
     });
   }
 
@@ -44,6 +54,7 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isPending} className="h-11 rounded-full px-8 text-sm font-bold">
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
           {isPending ? "Saving…" : "Save Settings"}
         </Button>
       </div>

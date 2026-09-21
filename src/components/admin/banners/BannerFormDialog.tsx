@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
   AdminModalContent,
@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { BannerFormValues } from "@/lib/services/admin-banner-service";
 import { createBannerAction, updateBannerAction } from "@/lib/actions/admin/banner-actions";
+import { useToast } from "@/lib/context/ToastContext";
 
 interface BannerLike extends BannerFormValues {
   id: string;
@@ -39,6 +40,7 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   function set<K extends keyof BannerFormValues>(key: K, value: BannerFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -50,9 +52,12 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
     startTransition(async () => {
       const result = banner ? await updateBannerAction(banner.id, values) : await createBannerAction(values);
       if (!result.ok) {
-        setError(result.error ?? "Something went wrong.");
+        const message = result.error ?? (banner ? "Failed to update banner" : "Failed to create banner");
+        setError(message);
+        showToast(message, "error");
         return;
       }
+      showToast(banner ? "Banner updated successfully" : "Banner created successfully", "success");
       setOpen(false);
     });
   }
@@ -128,7 +133,8 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending} className="rounded-full">
-              {isPending ? "Saving…" : banner ? "Save Changes" : "Create Banner"}
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPending ? (banner ? "Saving…" : "Creating…") : banner ? "Save Changes" : "Create Banner"}
             </Button>
           </AdminModalFooter>
         </form>

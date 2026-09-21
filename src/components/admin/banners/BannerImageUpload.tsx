@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Upload, Loader2, X } from "lucide-react";
 import { uploadBannerImageAction, removeBannerImageAction } from "@/lib/actions/admin/banner-actions";
 import { optimizeImageForUpload } from "@/lib/utils/client-image";
+import { useToast } from "@/lib/context/ToastContext";
 
 export function BannerImageUpload({
   bannerId,
@@ -23,6 +24,7 @@ export function BannerImageUpload({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   function handleFile(file: File | undefined) {
     if (!file) return;
@@ -31,16 +33,20 @@ export function BannerImageUpload({
       const optimized = await optimizeImageForUpload(file);
       if (!optimized.ok) {
         setError(optimized.error);
+        showToast(optimized.error, "error");
         return;
       }
       const formData = new FormData();
       formData.set("file", optimized.file);
       const result = await uploadBannerImageAction(bannerId, field, formData);
       if (!result.ok || !result.data) {
-        setError(result.error ?? "Upload failed.");
+        const message = result.error ?? "Upload failed.";
+        setError(message);
+        showToast(message, "error");
         return;
       }
       setUrl(result.data.url);
+      showToast("Image uploaded successfully", "success");
     });
   }
 
@@ -49,10 +55,13 @@ export function BannerImageUpload({
     startTransition(async () => {
       const result = await removeBannerImageAction(bannerId, field);
       if (!result.ok) {
-        setError(result.error ?? "Could not remove image.");
+        const message = result.error ?? "Could not remove image.";
+        setError(message);
+        showToast(message, "error");
         return;
       }
       setUrl("");
+      showToast("Image removed successfully", "success");
     });
   }
 

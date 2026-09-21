@@ -6,6 +6,7 @@ import { Upload, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { uploadProductImageAction, deleteProductImageAction } from "@/lib/actions/admin/product-actions";
 import { optimizeImageForUpload } from "@/lib/utils/client-image";
+import { useToast } from "@/lib/context/ToastContext";
 
 export interface ProductImageItem {
   id: string;
@@ -17,15 +18,18 @@ export function ProductImageManager({ productId, initialImages }: { productId: s
   const [error, setError] = useState<string | null>(null);
   const [isUploading, startUpload] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setError(null);
 
     startUpload(async () => {
+      let lastError: string | null = null;
       for (const file of Array.from(files)) {
         const optimized = await optimizeImageForUpload(file);
         if (!optimized.ok) {
+          lastError = optimized.error;
           setError(optimized.error);
           continue;
         }
@@ -34,10 +38,16 @@ export function ProductImageManager({ productId, initialImages }: { productId: s
         formData.set("sortOrder", String(images.length));
         const result = await uploadProductImageAction(productId, formData);
         if (!result.ok || !result.data) {
-          setError(result.error ?? "Upload failed.");
+          lastError = result.error ?? "Upload failed.";
+          setError(lastError);
           continue;
         }
         setImages((prev) => [...prev, { id: result.data!.id, url: result.data!.url }]);
+      }
+      if (lastError) {
+        showToast(lastError, "error");
+      } else {
+        showToast(files.length > 1 ? "Images uploaded successfully" : "Image uploaded successfully", "success");
       }
     });
     if (inputRef.current) inputRef.current.value = "";
@@ -45,7 +55,16 @@ export function ProductImageManager({ productId, initialImages }: { productId: s
 
   function handleDelete(image: ProductImageItem) {
     setImages((prev) => prev.filter((i) => i.id !== image.id));
-    void deleteProductImageAction(productId, image.id, image.url);
+    startUpload(async () => {
+      const result = await deleteProductImageAction(productId, image.id, image.url);
+      if (!result.ok) {
+        setImages((prev) => [...prev, image]);
+        setError(result.error ?? "Failed to delete image");
+        showToast(result.error ?? "Failed to delete image", "error");
+        return;
+      }
+      showToast("Image deleted successfully", "success");
+    });
   }
 
   return (

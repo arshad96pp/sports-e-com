@@ -16,17 +16,25 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { AdminModalError } from "@/components/admin/AdminModal";
+import { useToast } from "@/lib/context/ToastContext";
 
 interface ConfirmDeleteButtonProps {
   itemLabel: string;
+  /** Lowercase entity name (e.g. "product", "category") used to build the toast copy. */
+  entityName: string;
   onConfirm: () => Promise<{ ok: boolean; error?: string }>;
 }
 
+function capitalize(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /** Shared destructive-action confirmation for admin delete buttons (products, categories, offers, banners, …). */
-export function ConfirmDeleteButton({ itemLabel, onConfirm }: ConfirmDeleteButtonProps) {
+export function ConfirmDeleteButton({ itemLabel, entityName, onConfirm }: ConfirmDeleteButtonProps) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -53,9 +61,12 @@ export function ConfirmDeleteButton({ itemLabel, onConfirm }: ConfirmDeleteButto
               startTransition(async () => {
                 const result = await onConfirm();
                 if (!result.ok) {
-                  setError(result.error ?? "Something went wrong.");
+                  const message = result.error ?? `Failed to delete ${entityName}`;
+                  setError(message);
+                  showToast(message, "error");
                   return;
                 }
+                showToast(`${capitalize(entityName)} deleted successfully`, "success");
                 setOpen(false);
               });
             }}

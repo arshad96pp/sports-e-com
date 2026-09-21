@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
   AdminModalContent,
@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AdminCategory, AdminSubcategory, SubcategoryFormValues } from "@/lib/services/admin-category-service";
 import { createSubcategoryAction, updateSubcategoryAction } from "@/lib/actions/admin/category-actions";
+import { useToast } from "@/lib/context/ToastContext";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -31,6 +32,7 @@ export function SubcategoryFormDialog({ categories, subcategory }: { categories:
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
 
   function set<K extends keyof SubcategoryFormValues>(key: K, value: SubcategoryFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -42,9 +44,12 @@ export function SubcategoryFormDialog({ categories, subcategory }: { categories:
     startTransition(async () => {
       const result = subcategory ? await updateSubcategoryAction(subcategory.id, values) : await createSubcategoryAction(values);
       if (!result.ok) {
-        setError(result.error ?? "Something went wrong.");
+        const message = result.error ?? (subcategory ? "Failed to update subcategory" : "Failed to create subcategory");
+        setError(message);
+        showToast(message, "error");
         return;
       }
+      showToast(subcategory ? "Subcategory updated successfully" : "Subcategory created successfully", "success");
       setOpen(false);
     });
   }
@@ -99,7 +104,8 @@ export function SubcategoryFormDialog({ categories, subcategory }: { categories:
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending} className="rounded-full">
-              {isPending ? "Saving…" : subcategory ? "Save Changes" : "Create Subcategory"}
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPending ? (subcategory ? "Saving…" : "Creating…") : subcategory ? "Save Changes" : "Create Subcategory"}
             </Button>
           </AdminModalFooter>
         </form>

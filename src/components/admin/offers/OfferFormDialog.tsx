@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Dialog, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import {
   AdminModalContent,
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AdminOffer, OfferFormValues } from "@/lib/services/admin-offer-service";
 import { createOfferAction, updateOfferAction } from "@/lib/actions/admin/offer-actions";
+import { useToast } from "@/lib/context/ToastContext";
 
 function toDateInput(iso: string) {
   return iso ? iso.slice(0, 10) : "";
@@ -57,6 +58,7 @@ export function OfferFormDialog({
   const [error, setError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { showToast } = useToast();
   const isEditing = Boolean(offer);
   const formId = offer?.id ?? "create";
   const selectedCategoryId = values.categoryIds[0];
@@ -82,9 +84,12 @@ export function OfferFormDialog({
     startTransition(async () => {
       const result = offer ? await updateOfferAction(offer.id, payload) : await createOfferAction(payload);
       if (!result.ok) {
-        setError(result.error ?? "Something went wrong.");
+        const message = result.error ?? (isEditing ? "Failed to update offer" : "Failed to create offer");
+        setError(message);
+        showToast(message, "error");
         return;
       }
+      showToast(isEditing ? "Offer updated successfully" : "Offer created successfully", "success");
       setOpen(false);
     });
   }
@@ -229,7 +234,8 @@ export function OfferFormDialog({
               </Button>
             </DialogClose>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving…" : isEditing ? "Save changes" : "Create offer"}
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPending ? (isEditing ? "Saving…" : "Creating…") : isEditing ? "Save changes" : "Create offer"}
             </Button>
           </AdminModalFooter>
         </form>
