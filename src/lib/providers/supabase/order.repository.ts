@@ -47,8 +47,33 @@ export function createSupabaseOrderRepository(): OrderRepository {
         throw new Error(error?.message ?? "Could not place your order. Please try again.");
       }
 
-      const order = data as { order_number: string; total: number };
-      return { orderNumber: order.order_number, total: order.total };
+      const order = data as {
+        order_number: string;
+        total: number;
+        items?: {
+          product_id: string;
+          product_name: string;
+          product_sku: string;
+          quantity: number;
+          price: number;
+          size?: string | null;
+          color?: string | null;
+        }[];
+      };
+
+      return {
+        orderNumber: order.order_number,
+        total: Number(order.total),
+        items: (order.items ?? []).map((item) => ({
+          productId: item.product_id,
+          productName: item.product_name,
+          productSku: item.product_sku,
+          quantity: item.quantity,
+          price: Number(item.price),
+          size: item.size || null,
+          color: item.color || null,
+        })),
+      };
     },
 
     /** RLS-scoped: `orders_select_own_or_admin` lets a super admin read every row. */

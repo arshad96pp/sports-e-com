@@ -71,6 +71,7 @@ export interface OrderLineInput {
 export interface PlaceOrderResult {
   orderNumber: string;
   total: number;
+  items: OrderItemDTO[];
 }
 
 export interface OrderRepository {

@@ -21,6 +21,7 @@ interface ProductListingProps {
   filterOptions: ProductFilterOptions;
   title: string;
   description?: string;
+  offerMessage?: string;
   breadcrumbs: Crumb[];
   emptyLabel?: string;
   /**
@@ -41,6 +42,7 @@ export function ProductListing({
   filterOptions,
   title,
   description,
+  offerMessage,
   breadcrumbs,
   emptyLabel = "No products match your filters",
   hideFilters = false,
@@ -64,6 +66,7 @@ export function ProductListing({
 
       <div className="mt-3 mb-5">
         <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
+        {offerMessage && <p className="mt-1.5 text-sm text-ink-soft">{offerMessage}</p>}
         {description && <p className="mt-1.5 max-w-2xl text-sm text-muted">{description}</p>}
         <p className="mt-2 text-xs font-medium text-muted-soft">
           {total} {total === 1 ? "product" : "products"}

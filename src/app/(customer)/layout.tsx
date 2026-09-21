@@ -1,5 +1,6 @@
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/Header";
+import { OfferAnnouncement } from "@/components/layout/OfferAnnouncement";
 import { Footer } from "@/components/layout/Footer";
 
 /**
@@ -12,6 +13,7 @@ import { Footer } from "@/components/layout/Footer";
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   return (
     <Providers>
+      <OfferAnnouncement />
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />

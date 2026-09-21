@@ -14,7 +14,7 @@ export async function SportCollection() {
   if (products.length === 0) return null;
 
   return (
-    <section className="container-app py-12 sm:py-16 lg:py-20">
+    <section className="container-app pt-12 pb-4 sm:pt-16 sm:pb-6 lg:pt-20 lg:pb-6">
       <HomeSectionHeader
         title="Shop Football"
         description="Essentials for training, matches and everyday play."

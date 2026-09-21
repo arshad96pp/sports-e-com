@@ -6,6 +6,8 @@ import { ProductListing } from "@/components/product/ProductListing";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/seo/structured-data";
 import { parseFiltersFromSearchParams, filtersToQueryParams, searchParamsToURLSearchParams } from "@/lib/utils/product-filter-params";
+import { getStorefrontOfferForCategory } from "@/lib/services/offer-service";
+import { categoryOfferMessage } from "@/lib/utils/offers";
 
 export async function generateStaticParams() {
   const categories = await getAllCategories();
@@ -42,9 +44,10 @@ export default async function CategoryPage(props: PageProps<"/category/[slug]">)
 
   const { filters, sort, page } = parseFiltersFromSearchParams(searchParamsToURLSearchParams(searchParams));
 
-  const [{ products, total, pageCount }, filterOptions] = await Promise.all([
+  const [{ products, total, pageCount }, filterOptions, offer] = await Promise.all([
     queryProducts({ category: category.slug, ...filtersToQueryParams(filters, sort, page) }),
     getProductFilterOptions(category.slug),
+    getStorefrontOfferForCategory(category.slug),
   ]);
 
   return (
@@ -63,6 +66,7 @@ export default async function CategoryPage(props: PageProps<"/category/[slug]">)
         filterOptions={filterOptions}
         title={category.name}
         description={category.listingBlurb}
+        offerMessage={offer ? categoryOfferMessage(offer, category.name) : undefined}
         breadcrumbs={[{ label: "Home", href: "/" }, { label: category.name }]}
         emptyLabel={`No ${category.name.toLowerCase()} match your filters`}
       />

@@ -50,7 +50,19 @@ export async function buildWhatsAppOrderLinkAction(
     return { ok: false, error: err instanceof Error ? err.message : "Could not place your order. Please try again." };
   }
 
-  const message = buildOrderMessage({ total: order.total, address: parsedAddress.data, lines });
+  const message = buildOrderMessage({
+    total: order.total,
+    address: parsedAddress.data,
+    lines: order.items.map((item) => ({
+      name: item.productName,
+      productId: item.productId ?? "",
+      sku: item.productSku,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size,
+      color: item.color,
+    })),
+  });
   const settings = await getStoreSettings();
   const whatsappUrl = buildWhatsAppLink(message, settings.whatsappNumber);
 

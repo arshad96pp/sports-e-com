@@ -124,21 +124,3 @@ export function ProductSectionSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
-export function OffersSectionSkeleton() {
-  return (
-    <section className="border-y border-border bg-surface">
-      <div className="container-app grid gap-10 py-16 sm:py-20 lg:grid-cols-12 lg:py-24">
-        <div className="lg:col-span-4">
-          <Bone className="h-3 w-32" />
-          <Bone className="mt-3 h-8 w-56" />
-          <Bone className="mt-3 h-4 w-48" />
-        </div>
-        <div className="flex gap-5 lg:col-span-8">
-          <Bone className="aspect-square flex-1 rounded-[4px]" />
-          <Bone className="hidden aspect-square flex-1 rounded-[4px] sm:block" />
-          <Bone className="hidden aspect-square flex-1 rounded-[4px] lg:block" />
-        </div>
-      </div>
-    </section>
-  );
-}

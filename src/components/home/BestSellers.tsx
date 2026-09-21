@@ -6,7 +6,7 @@ export async function BestSellers() {
   if (products.length === 0) return null;
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20">
+    <section className="pt-8 pb-12 sm:pt-10 sm:pb-16 lg:pt-10 lg:pb-20">
       <div className="container-app">
         <ProductCarousel
           products={products}

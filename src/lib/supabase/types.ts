@@ -935,6 +935,7 @@ export type Database = {
       }
       generate_order_number: { Args: never; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
+      best_active_offer_percent: { Args: { p_product_id: string }; Returns: number }
       update_order_status: {
         Args: {
           p_order_id: string

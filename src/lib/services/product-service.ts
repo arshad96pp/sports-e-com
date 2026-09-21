@@ -3,6 +3,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { getProductRepository } from "@/lib/config/providers";
 import { getDiscountPercent } from "@/lib/data/products";
+import { withOfferPricing, withOfferPricingOne } from "@/lib/services/pricing-service";
 import type { CategorySlug, Product } from "@/lib/types";
 import type {
   AdminProductDetail,
@@ -17,7 +18,7 @@ export type { ProductFilterOptions, ProductFormValues, ProductQueryParams, Produ
 export type { AdminProductDetail, AdminProductListItem };
 
 export async function getProductsByIds(ids: string[]): Promise<Product[]> {
-  return getProductRepository().getProductsByIds(ids);
+  return withOfferPricing(await getProductRepository().getProductsByIds(ids));
 }
 
 export async function getAllProducts(): Promise<Product[]> {
@@ -34,15 +35,15 @@ export async function getAllProductSlugs(): Promise<string[]> {
  * `fetch` is — this collapses the two into one query per request.
  */
 export const getProductBySlug = cache(async (slug: string): Promise<Product | undefined> => {
-  return getProductRepository().getProductBySlug(slug);
+  return withOfferPricingOne(await getProductRepository().getProductBySlug(slug));
 });
 
 export async function getProductById(id: string): Promise<Product | undefined> {
-  return getProductRepository().getProductById(id);
+  return withOfferPricingOne(await getProductRepository().getProductById(id));
 }
 
 export async function getProductsByCategory(category: CategorySlug): Promise<Product[]> {
-  return getProductRepository().getProductsByCategory(category);
+  return withOfferPricing(await getProductRepository().getProductsByCategory(category));
 }
 
 /**
@@ -50,18 +51,29 @@ export async function getProductsByCategory(category: CategorySlug): Promise<Pro
  * freshness — cached the same way as `getAllCategories`: `revalidate: 120`
  * as a safety net, `revalidateTag("products", { expire: 0 })` from admin
  * product actions for instant invalidation on create/update/delete.
+ *
+ * Offer pricing is applied after the catalog cache so an offer change does
+ * not require busting the product cache, and catalog rows stay unmutated.
  */
-export const getFeaturedProducts = unstable_cache(
+const getCachedFeaturedProducts = unstable_cache(
   async (limit = 8): Promise<Product[]> => getProductRepository().getFeaturedProducts(limit),
   ["products:featured"],
   { tags: ["products"], revalidate: 120 }
 );
 
-export const getBestSellers = unstable_cache(
+export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
+  return withOfferPricing(await getCachedFeaturedProducts(limit));
+}
+
+const getCachedBestSellers = unstable_cache(
   async (limit = 12): Promise<Product[]> => getProductRepository().getBestSellers(limit),
   ["products:best-sellers"],
   { tags: ["products"], revalidate: 120 }
 );
+
+export async function getBestSellers(limit = 12): Promise<Product[]> {
+  return withOfferPricing(await getCachedBestSellers(limit));
+}
 
 /**
  * Business rule: a "deal" is anything flagged `dealOfTheDay`, or discounted
@@ -70,7 +82,7 @@ export const getBestSellers = unstable_cache(
  * scans a bounded 60-row pool, not the whole catalog) when flagged deals
  * don't fill the requested count.
  */
-export const getDealProducts = unstable_cache(
+const getCachedDealProducts = unstable_cache(
   async (limit = 8): Promise<Product[]> => {
     const repo = getProductRepository();
     const flagged = await repo.getDealOfTheDayProducts(limit);
@@ -88,12 +100,16 @@ export const getDealProducts = unstable_cache(
   { tags: ["products"], revalidate: 120 }
 );
 
+export async function getDealProducts(limit = 8): Promise<Product[]> {
+  return withOfferPricing(await getCachedDealProducts(limit));
+}
+
 export async function getRelatedProducts(product: Pick<Product, "id" | "category">, limit = 4): Promise<Product[]> {
-  return getProductRepository().getRelatedProducts(product, limit);
+  return withOfferPricing(await getProductRepository().getRelatedProducts(product, limit));
 }
 
 export async function searchProducts(query: string): Promise<Product[]> {
-  return getProductRepository().searchProducts(query);
+  return withOfferPricing(await getProductRepository().searchProducts(query));
 }
 
 export { getDiscountPercent };
@@ -107,5 +123,6 @@ export const getProductFilterOptions = unstable_cache(
 );
 
 export async function queryProducts(params: ProductQueryParams): Promise<ProductQueryResult> {
-  return getProductRepository().queryProducts(params);
+  const result = await getProductRepository().queryProducts(params);
+  return { ...result, products: await withOfferPricing(result.products) };
 }
