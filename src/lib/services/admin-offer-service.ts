@@ -15,6 +15,9 @@ function assertValidOffer(values: OfferFormValues): void {
   if (new Date(values.startDate) >= new Date(values.endDate)) {
     throw new Error("The end date must be after the start date.");
   }
+  if (!values.categoryIds[0]) {
+    throw new Error("Select a category.");
+  }
 }
 
 export async function createOffer(values: OfferFormValues): Promise<{ id: string }> {
