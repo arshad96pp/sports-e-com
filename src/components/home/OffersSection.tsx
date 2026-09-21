@@ -1,9 +1,16 @@
 import { getDealProducts } from "@/lib/repositories/product-repository";
 import { HomeSectionHeader, ViewAllLink } from "@/components/home/HomeSectionHeader";
 import { HomeProductRail } from "@/components/home/HomeProductRail";
+import type { Product } from "@/lib/types";
 
 export async function OffersSection() {
-  const products = await getDealProducts(4);
+  let products: Product[] = [];
+  try {
+    products = await getDealProducts(4);
+  } catch (error) {
+    console.error("Failed to load deal products:", error);
+  }
+  // Secondary/opportunistic rail — hides gracefully rather than showing an empty state.
   if (products.length === 0) return null;
 
   return (

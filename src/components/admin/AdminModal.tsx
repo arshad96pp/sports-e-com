@@ -86,15 +86,29 @@ function AdminFormField({
   label,
   className,
   children,
+  htmlFor,
 }: {
   label: React.ReactNode;
   className?: string;
   children: React.ReactNode;
+  /** Pass this when `children` isn't a plain input/textarea that accepts `id` directly
+   * (e.g. a Radix `Select`, whose root renders no DOM node) — wire the same id onto the
+   * actual focusable element (e.g. `SelectTrigger`) yourself. */
+  htmlFor?: string;
 }) {
+  const generatedId = React.useId();
+  const child =
+    !htmlFor && React.isValidElement<{ id?: string }>(children)
+      ? React.cloneElement(children, { id: children.props.id ?? generatedId })
+      : children;
+  const fieldId = htmlFor ?? (React.isValidElement<{ id?: string }>(child) ? child.props.id : undefined) ?? generatedId;
+
   return (
     <div className={className}>
-      <Label className="mb-1.5 text-xs font-semibold text-ink-soft">{label}</Label>
-      {children}
+      <Label htmlFor={fieldId} className="mb-1.5 text-xs font-semibold text-ink-soft">
+        {label}
+      </Label>
+      {child}
     </div>
   );
 }

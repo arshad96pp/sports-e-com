@@ -9,6 +9,8 @@ import { A11y, Autoplay, Navigation } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import type { HeroBannerDTO } from "@/lib/services/hero-banner-service";
 import { HeroArt } from "@/components/home/HeroArt";
+import { HOME_IMAGES } from "@/lib/home-images";
+import { STORE } from "@/lib/config";
 import "swiper/css";
 
 const TRUST_BADGES = [
@@ -16,6 +18,31 @@ const TRUST_BADGES = [
   { icon: ShieldCheck, label: "Genuine Products", sublabel: "Trusted by athletes" },
   { icon: RotateCcw, label: "Easy Returns", sublabel: "Hassle free" },
 ];
+
+/**
+ * Rendered when there are no active admin-managed banners (empty store,
+ * API failure) so the hero never collapses to a blank section. Reuses the
+ * same slide markup as a real banner — single-slide static, arrows/dots
+ * hidden — just with static copy and photography instead of Supabase data.
+ *
+ * Copy is deliberately distinct from `HomeCampaignBanner`'s (which reuses
+ * `STORE.tagline`, "Gear Up. Play Better.") — that section always renders
+ * further down the page, so this can't reuse the same words without the
+ * page reading like the hero twice.
+ */
+const FALLBACK_HERO_BANNER: HeroBannerDTO = {
+  id: "fallback",
+  eyebrow: STORE.name,
+  title: "Your Game Starts Here.",
+  subtitle: "Premium football, cricket and tennis gear for every level.",
+  ctaLabel: "Shop the collection",
+  ctaHref: "/products",
+  imageUrlDesktop: HOME_IMAGES.fallbackHero,
+  imageUrlMobile: HOME_IMAGES.fallbackHero,
+  categorySlug: "football",
+  isActive: true,
+  sortOrder: 0,
+};
 
 interface HeroProps {
   /** Active banners from Supabase (`hero_banners`), admin-managed via /admin/banners. */
@@ -28,8 +55,7 @@ export function Hero({ banners }: HeroProps) {
   const swiperRef = useRef<SwiperType | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const slides = banners;
-  if (slides.length === 0) return null;
+  const slides = banners.length > 0 ? banners : [FALLBACK_HERO_BANNER];
   const isSingleSlide = slides.length === 1;
 
   return (

@@ -47,7 +47,14 @@ export function BuyNowModal() {
 
   useEffect(() => {
     if (!request) return;
-  
+
+    // The reset (default address) and the resume-ref/cache/fetch override below
+    // must land in the same effect run so they batch into one commit — the
+    // form should never paint the blank default before the known address
+    // fills in. Splitting the reset into a render-time adjustment (as the lint
+    // rule wants) would separate them into two commits and risk a one-frame
+    // flash of blank fields when reopening with a cached/resumed address.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddress({ ...EMPTY_ADDRESS, fullName: user?.fullName ?? "", phone: user?.phone ?? "" });
     setErrors({});
     setSubmitError(null);

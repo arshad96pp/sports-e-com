@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { slugify } from "@/lib/utils/slug";
 
 function TagListInput({ label, values, onChange, placeholder }: { label: string; values: string[]; onChange: (v: string[]) => void; placeholder: string }) {
   const [draft, setDraft] = useState("");
+  const id = useId();
 
   function add() {
     const v = draft.trim();
@@ -26,9 +27,10 @@ function TagListInput({ label, values, onChange, placeholder }: { label: string;
 
   return (
     <div>
-      <Label className="mb-1.5 text-xs font-semibold text-ink-soft">{label}</Label>
+      <Label htmlFor={id} className="mb-1.5 text-xs font-semibold text-ink-soft">{label}</Label>
       <div className="flex gap-2">
         <Input
+          id={id}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -173,8 +175,9 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
         <h2 className="font-display text-base font-bold text-ink">Basic Information</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Name</Label>
+            <Label htmlFor="product-name" className="mb-1.5 text-xs font-semibold text-ink-soft">Name</Label>
             <Input
+              id="product-name"
               required
               value={values.name}
               onChange={(e) => {
@@ -189,8 +192,9 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
             />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Slug</Label>
+            <Label htmlFor="product-slug" className="mb-1.5 text-xs font-semibold text-ink-soft">Slug</Label>
             <Input
+              id="product-slug"
               required
               value={values.slug}
               onChange={(e) => {
@@ -202,8 +206,9 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
             />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">SKU</Label>
+            <Label htmlFor="product-sku" className="mb-1.5 text-xs font-semibold text-ink-soft">SKU</Label>
             <Input
+              id="product-sku"
               required
               value={values.sku}
               onChange={(e) => {
@@ -222,12 +227,12 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
             ) : null}
           </div>
           <div className="sm:col-span-2">
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Short Description</Label>
-            <Input required value={values.shortDescription} onChange={(e) => set("shortDescription", e.target.value)} className="h-10" />
+            <Label htmlFor="product-short-description" className="mb-1.5 text-xs font-semibold text-ink-soft">Short Description</Label>
+            <Input id="product-short-description" required value={values.shortDescription} onChange={(e) => set("shortDescription", e.target.value)} className="h-10" />
           </div>
           <div className="sm:col-span-2">
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Description</Label>
-            <Textarea required rows={4} value={values.description} onChange={(e) => set("description", e.target.value)} />
+            <Label htmlFor="product-description" className="mb-1.5 text-xs font-semibold text-ink-soft">Description</Label>
+            <Textarea id="product-description" required rows={4} value={values.description} onChange={(e) => set("description", e.target.value)} />
           </div>
         </div>
       </section>
@@ -236,9 +241,9 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
         <h2 className="font-display text-base font-bold text-ink">Categorization</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Category</Label>
+            <Label htmlFor="product-category" className="mb-1.5 text-xs font-semibold text-ink-soft">Category</Label>
             <Select value={values.categoryId} onValueChange={(v) => setValues((s) => ({ ...s, categoryId: v, subcategoryId: null }))}>
-              <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
+              <SelectTrigger id="product-category" className="h-10 w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
               <SelectContent>
                 {categories.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -247,9 +252,9 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
             </Select>
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Subcategory</Label>
+            <Label htmlFor="product-subcategory" className="mb-1.5 text-xs font-semibold text-ink-soft">Subcategory</Label>
             <Select value={values.subcategoryId ?? "__none"} onValueChange={(v) => set("subcategoryId", v === "__none" ? null : v)}>
-              <SelectTrigger className="h-10 w-full"><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectTrigger id="product-subcategory" className="h-10 w-full"><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none">None</SelectItem>
                 {category?.subcategories.map((s) => (
@@ -259,16 +264,16 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
             </Select>
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Brand</Label>
-            <Input required value={values.brand} onChange={(e) => set("brand", e.target.value)} className="h-10" />
+            <Label htmlFor="product-brand" className="mb-1.5 text-xs font-semibold text-ink-soft">Brand</Label>
+            <Input id="product-brand" required value={values.brand} onChange={(e) => set("brand", e.target.value)} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Sport</Label>
-            <Input required value={values.sport} onChange={(e) => set("sport", e.target.value)} className="h-10" />
+            <Label htmlFor="product-sport" className="mb-1.5 text-xs font-semibold text-ink-soft">Sport</Label>
+            <Input id="product-sport" required value={values.sport} onChange={(e) => set("sport", e.target.value)} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Product Type</Label>
-            <Input required value={values.productType} onChange={(e) => set("productType", e.target.value)} className="h-10" />
+            <Label htmlFor="product-type" className="mb-1.5 text-xs font-semibold text-ink-soft">Product Type</Label>
+            <Input id="product-type" required value={values.productType} onChange={(e) => set("productType", e.target.value)} className="h-10" />
           </div>
         </div>
       </section>
@@ -277,16 +282,16 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
         <h2 className="font-display text-base font-bold text-ink">Pricing & Stock</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Price (₹)</Label>
-            <Input required type="number" min={0} step="0.01" value={values.price} onChange={(e) => set("price", Number(e.target.value))} className="h-10" />
+            <Label htmlFor="product-price" className="mb-1.5 text-xs font-semibold text-ink-soft">Price (₹)</Label>
+            <Input id="product-price" required type="number" min={0} step="0.01" value={values.price} onChange={(e) => set("price", Number(e.target.value))} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">MRP (₹)</Label>
-            <Input required type="number" min={0} step="0.01" value={values.mrp} onChange={(e) => set("mrp", Number(e.target.value))} className="h-10" />
+            <Label htmlFor="product-mrp" className="mb-1.5 text-xs font-semibold text-ink-soft">MRP (₹)</Label>
+            <Input id="product-mrp" required type="number" min={0} step="0.01" value={values.mrp} onChange={(e) => set("mrp", Number(e.target.value))} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Stock</Label>
-            <Input required type="number" min={0} value={values.stock} onChange={(e) => set("stock", Number(e.target.value))} className="h-10" />
+            <Label htmlFor="product-stock" className="mb-1.5 text-xs font-semibold text-ink-soft">Stock</Label>
+            <Input id="product-stock" required type="number" min={0} value={values.stock} onChange={(e) => set("stock", Number(e.target.value))} className="h-10" />
           </div>
         </div>
       </section>
@@ -375,12 +380,12 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
         <h2 className="font-display text-base font-bold text-ink">SEO</h2>
         <div className="mt-4 grid grid-cols-1 gap-4">
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">SEO Title</Label>
-            <Input value={values.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} className="h-10" />
+            <Label htmlFor="product-seo-title" className="mb-1.5 text-xs font-semibold text-ink-soft">SEO Title</Label>
+            <Input id="product-seo-title" value={values.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">SEO Description</Label>
-            <Textarea rows={2} value={values.seoDescription} onChange={(e) => set("seoDescription", e.target.value)} />
+            <Label htmlFor="product-seo-description" className="mb-1.5 text-xs font-semibold text-ink-soft">SEO Description</Label>
+            <Textarea id="product-seo-description" rows={2} value={values.seoDescription} onChange={(e) => set("seoDescription", e.target.value)} />
           </div>
         </div>
       </section>

@@ -25,10 +25,11 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
+/** Matches Hero's `min-h-[76vh] sm:72vh lg:74vh` so resolving the real hero or its fallback never shifts the page. */
 export function HeroSkeleton() {
   return (
     <section className="relative overflow-hidden bg-ink">
-      <Skeleton className="h-105 w-full animate-pulse rounded-none bg-white/5 sm:h-120" />
+      <Skeleton className="min-h-[76vh] w-full animate-pulse rounded-none bg-white/5 sm:min-h-[72vh] lg:min-h-[74vh]" />
     </section>
   );
 }

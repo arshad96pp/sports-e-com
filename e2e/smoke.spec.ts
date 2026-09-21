@@ -52,6 +52,11 @@ test.describe("Smoke", () => {
     await cartLink.click();
     await expect(page).toHaveURL(/\/cart/);
     await expect(page.getByText("Shopping Cart")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Continue Shopping" })).toHaveCount(0);
+    // The order summary (with its own "Continue Shopping" link) only renders
+    // once the cart has items — the empty-cart state renders a different,
+    // centered "Your cart is empty" message instead. Asserting on the
+    // "Proceed to Checkout" button is what actually distinguishes the two,
+    // rather than "Continue Shopping" being absent (it appears in both states).
+    await expect(page.getByRole("button", { name: "Proceed to Checkout" })).toBeVisible();
   });
 });

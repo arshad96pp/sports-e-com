@@ -1,8 +1,15 @@
 import { getBestSellers } from "@/lib/repositories/product-repository";
 import { ProductCarousel } from "@/components/product/ProductCarousel";
+import type { Product } from "@/lib/types";
 
 export async function BestSellers() {
-  const products = await getBestSellers();
+  let products: Product[] = [];
+  try {
+    products = await getBestSellers();
+  } catch (error) {
+    console.error("Failed to load best sellers:", error);
+  }
+  // Secondary curated rail — hides gracefully rather than showing an empty state.
   if (products.length === 0) return null;
 
   return (

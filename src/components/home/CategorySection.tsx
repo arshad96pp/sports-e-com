@@ -57,6 +57,8 @@ function CategoryTile({ cat, index }: { cat: CategoryDTO; index: number }) {
         />
       ) : (
         <div className="absolute inset-0 bg-surface-strong">
+          {/* Icon is chosen per-category from a fixed set of stateless SVG icon components. */}
+          {/* eslint-disable-next-line react-hooks/static-components */}
           <Icon className="absolute -bottom-8 -right-8 h-40 w-40 text-ink/10" strokeWidth={0.9} />
         </div>
       )}
@@ -82,7 +84,14 @@ function CategoryTile({ cat, index }: { cat: CategoryDTO; index: number }) {
 }
 
 export async function CategorySection() {
-  const categories = await getAllCategories();
+  let categories: CategoryDTO[] = [];
+  try {
+    categories = await getAllCategories();
+  } catch (error) {
+    console.error("Failed to load categories:", error);
+  }
+  // Categories are a secondary navigation aid, not the main content — an
+  // empty/failed fetch hides the section rather than reserving blank space.
   if (categories.length === 0) return null;
 
   const [football, ...rest] = [

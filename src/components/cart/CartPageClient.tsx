@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, ShoppingCart, X } from "lucide-react";
 import { useCart } from "@/lib/context/CartContext";
@@ -20,12 +20,14 @@ export function CartPageClient() {
   const productIds = useMemo(() => items.map((i) => i.productId), [items]);
   const { products, loading: productsLoading, error: productsError, retry: retryProducts } =
     useProductsByIds(productIds);
+  // Latches to true the first time data is ready and never resets — so a later
+  // refetch (e.g. adding an item) doesn't flash the full-page skeleton again.
+  // Setting state directly in the render body (not an effect) is the React-
+  // recommended way to do this: the `!ready` guard makes it fire at most once.
   const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (isInitialized && !productsLoading) {
-      setReady(true);
-    }
-  }, [isInitialized, productsLoading]);
+  if (!ready && isInitialized && !productsLoading) {
+    setReady(true);
+  }
 
   const { subtotal, mrpTotal } = useMemo(() => {
     let subtotal = 0;

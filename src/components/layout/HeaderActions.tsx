@@ -40,7 +40,7 @@ export function HeaderActions() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { count: cartCount } = useCart();
   const { productIds: wishlistIds } = useWishlist();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   return (
     <>

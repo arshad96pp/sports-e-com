@@ -13,6 +13,8 @@ export const HOME_IMAGES = {
   } satisfies Partial<Record<CategorySlug, string>>,
   campaign: "/images/home/campaign-gear-up.webp",
   sportStory: "/images/home/story-football.webp",
+  /** Used only when no admin-managed hero banners are active — keep distinct from `campaign` so the fallback hero and the mid-page campaign banner never show the same photo. */
+  fallbackHero: "/images/home/story-football.webp",
 } as const;
 
 export function categoryImageSrc(slug: string): string | undefined {

@@ -101,9 +101,9 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
               </AdminFormField>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <AdminFormField label="Category">
+              <AdminFormField label="Category" htmlFor="banner-category">
                 <Select value={values.categoryId ?? "__none"} onValueChange={(v) => set("categoryId", v === "__none" ? null : v)}>
-                  <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="banner-category" className="h-10 w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none">None</SelectItem>
                     {categories.map((c) => (

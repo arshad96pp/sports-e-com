@@ -53,6 +53,20 @@ export function ProductReviewForm({ productId, onReviewAdded }: ProductReviewFor
 
   if (eligibility === "loading") return null;
 
+  // A signed-in super admin is still "authenticated" but isn't a shopper — the
+  // server action returns "guest" for them (see review-actions.ts) rather than
+  // a distinct value, so it needs its own check here, not just `isAuthenticated`.
+  if (eligibility === "guest") {
+    return (
+      <div className="rounded-xl border border-border p-4 text-sm text-ink-soft">
+        <Link href="/login" className="font-semibold text-ink underline underline-offset-2">
+          Log in
+        </Link>{" "}
+        to write a review.
+      </div>
+    );
+  }
+
   if (eligibility === "already_reviewed") {
     return (
       <div className="rounded-xl border border-border p-4 text-sm text-ink-soft">

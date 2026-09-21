@@ -63,9 +63,9 @@ export function SubcategoryFormDialog({ categories, subcategory }: { categories:
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <AdminModalBody className="flex flex-col gap-4">
             <AdminModalError>{error}</AdminModalError>
-            <AdminFormField label="Category">
+            <AdminFormField label="Category" htmlFor="subcategory-category">
               <Select value={values.categoryId} onValueChange={(v) => set("categoryId", v)}>
-                <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="subcategory-category" className="h-10 w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>

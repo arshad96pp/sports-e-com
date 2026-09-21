@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -16,8 +16,6 @@ export const metadata = {
   description: `Get in touch with ${STORE.name} via email for order and product support.`,
   alternates: { canonical: "/contact" },
 };
-
-const SUPPORT_HOURS = "Mon–Sat 10am–7pm IST";
 
 const DETAILS = [
   {

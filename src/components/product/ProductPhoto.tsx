@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { cn } from "cn";
 import type { Product } from "@/lib/types";
@@ -62,11 +62,20 @@ export function ProductPhoto({
   const resolvedHoverSrc = resolveProductImageSrc(product.images[1]?.url);
   const [src, setSrc] = useState(resolvedSrc);
   const [hoverSrc, setHoverSrc] = useState(resolvedHoverSrc);
-
-  useEffect(() => {
+  // Local state can diverge from the resolved props (`onError` below sets it
+  // to null to fall back to the placeholder), so it can't be a pure derived
+  // value — but it still needs to reset when the underlying product/image
+  // changes. Tracking the previous resolved values and adjusting state
+  // directly in the render body (React's recommended pattern for this) does
+  // that without the extra effect render pass.
+  const [prevResolvedSrc, setPrevResolvedSrc] = useState(resolvedSrc);
+  const [prevResolvedHoverSrc, setPrevResolvedHoverSrc] = useState(resolvedHoverSrc);
+  if (resolvedSrc !== prevResolvedSrc || resolvedHoverSrc !== prevResolvedHoverSrc) {
+    setPrevResolvedSrc(resolvedSrc);
+    setPrevResolvedHoverSrc(resolvedHoverSrc);
     setSrc(resolvedSrc);
     setHoverSrc(resolvedHoverSrc);
-  }, [resolvedSrc, resolvedHoverSrc]);
+  }
 
   // `fill` needs a positioned ancestor. Callers sometimes pass their own
   // "absolute inset-0 …" (to overlay a sibling badge/button in an already-

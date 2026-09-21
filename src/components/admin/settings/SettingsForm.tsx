@@ -67,8 +67,8 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
           </button>
           <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleLogoUpload(e.target.files?.[0])} />
           <div className="flex-1">
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Store Name</Label>
-            <Input required value={values.storeName} onChange={(e) => set("storeName", e.target.value)} className="h-10" />
+            <Label htmlFor="settings-store-name" className="mb-1.5 text-xs font-semibold text-ink-soft">Store Name</Label>
+            <Input id="settings-store-name" required value={values.storeName} onChange={(e) => set("storeName", e.target.value)} className="h-10" />
           </div>
         </div>
       </section>
@@ -77,24 +77,24 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
         <h2 className="font-display text-base font-bold text-ink">Contact</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">WhatsApp Number (digits only, intl. format)</Label>
-            <Input required value={values.whatsappNumber} onChange={(e) => set("whatsappNumber", e.target.value)} className="h-10" placeholder="919876543210" />
+            <Label htmlFor="settings-whatsapp" className="mb-1.5 text-xs font-semibold text-ink-soft">WhatsApp Number (digits only, intl. format)</Label>
+            <Input id="settings-whatsapp" required value={values.whatsappNumber} onChange={(e) => set("whatsappNumber", e.target.value)} className="h-10" placeholder="919876543210" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Contact Phone</Label>
-            <Input required value={values.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} className="h-10" />
+            <Label htmlFor="settings-contact-phone" className="mb-1.5 text-xs font-semibold text-ink-soft">Contact Phone</Label>
+            <Input id="settings-contact-phone" required value={values.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Contact Email</Label>
-            <Input required type="email" value={values.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} className="h-10" />
+            <Label htmlFor="settings-contact-email" className="mb-1.5 text-xs font-semibold text-ink-soft">Contact Email</Label>
+            <Input id="settings-contact-email" required type="email" value={values.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Free Shipping Threshold (₹)</Label>
-            <Input required type="number" min={0} value={values.freeShippingThreshold} onChange={(e) => set("freeShippingThreshold", Number(e.target.value))} className="h-10" />
+            <Label htmlFor="settings-shipping-threshold" className="mb-1.5 text-xs font-semibold text-ink-soft">Free Shipping Threshold (₹)</Label>
+            <Input id="settings-shipping-threshold" required type="number" min={0} value={values.freeShippingThreshold} onChange={(e) => set("freeShippingThreshold", Number(e.target.value))} className="h-10" />
           </div>
           <div className="sm:col-span-2">
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Address</Label>
-            <Textarea rows={2} value={values.addressLine} onChange={(e) => set("addressLine", e.target.value)} />
+            <Label htmlFor="settings-address" className="mb-1.5 text-xs font-semibold text-ink-soft">Address</Label>
+            <Textarea id="settings-address" rows={2} value={values.addressLine} onChange={(e) => set("addressLine", e.target.value)} />
           </div>
         </div>
       </section>
@@ -111,8 +111,8 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
             ] as const
           ).map(([key, label]) => (
             <div key={key}>
-              <Label className="mb-1.5 text-xs font-semibold text-ink-soft">{label}</Label>
-              <Input value={values[key] ?? ""} onChange={(e) => set(key, e.target.value)} className="h-10" />
+              <Label htmlFor={`settings-${key}`} className="mb-1.5 text-xs font-semibold text-ink-soft">{label}</Label>
+              <Input id={`settings-${key}`} value={values[key] ?? ""} onChange={(e) => set(key, e.target.value)} className="h-10" />
             </div>
           ))}
         </div>
@@ -122,20 +122,20 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
         <h2 className="font-display text-base font-bold text-ink">Policies & SEO Defaults</h2>
         <div className="mt-4 grid grid-cols-1 gap-4">
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Shipping Info</Label>
-            <Textarea rows={2} value={values.shippingInfo} onChange={(e) => set("shippingInfo", e.target.value)} />
+            <Label htmlFor="settings-shipping-info" className="mb-1.5 text-xs font-semibold text-ink-soft">Shipping Info</Label>
+            <Textarea id="settings-shipping-info" rows={2} value={values.shippingInfo} onChange={(e) => set("shippingInfo", e.target.value)} />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Return Policy</Label>
-            <Textarea rows={2} value={values.returnPolicy} onChange={(e) => set("returnPolicy", e.target.value)} />
+            <Label htmlFor="settings-return-policy" className="mb-1.5 text-xs font-semibold text-ink-soft">Return Policy</Label>
+            <Textarea id="settings-return-policy" rows={2} value={values.returnPolicy} onChange={(e) => set("returnPolicy", e.target.value)} />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Default SEO Title</Label>
-            <Input value={values.seoDefaultTitle} onChange={(e) => set("seoDefaultTitle", e.target.value)} className="h-10" />
+            <Label htmlFor="settings-seo-title" className="mb-1.5 text-xs font-semibold text-ink-soft">Default SEO Title</Label>
+            <Input id="settings-seo-title" value={values.seoDefaultTitle} onChange={(e) => set("seoDefaultTitle", e.target.value)} className="h-10" />
           </div>
           <div>
-            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Default SEO Description</Label>
-            <Textarea rows={2} value={values.seoDefaultDescription} onChange={(e) => set("seoDefaultDescription", e.target.value)} />
+            <Label htmlFor="settings-seo-description" className="mb-1.5 text-xs font-semibold text-ink-soft">Default SEO Description</Label>
+            <Textarea id="settings-seo-description" rows={2} value={values.seoDefaultDescription} onChange={(e) => set("seoDefaultDescription", e.target.value)} />
           </div>
         </div>
       </section>

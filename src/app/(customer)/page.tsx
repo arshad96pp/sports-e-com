@@ -11,7 +11,7 @@ import { WhyChooseUs } from "@/components/home/WhyChooseUs";
 import { HomeShopCta } from "@/components/home/HomeShopCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
-import { getActiveHeroBanners } from "@/lib/services/hero-banner-service";
+import { getActiveHeroBanners, type HeroBannerDTO } from "@/lib/services/hero-banner-service";
 import {
   HeroSkeleton,
   CategorySectionSkeleton,
@@ -24,7 +24,14 @@ export const metadata: Metadata = {
 };
 
 async function HeroSection() {
-  const banners = await getActiveHeroBanners();
+  let banners: HeroBannerDTO[] = [];
+  try {
+    banners = await getActiveHeroBanners();
+  } catch (error) {
+    // Hero renders its own static fallback for an empty list — swallow the
+    // error here instead of letting it bubble to the page's error boundary.
+    console.error("Failed to load hero banners:", error);
+  }
   return <Hero banners={banners} />;
 }
 
