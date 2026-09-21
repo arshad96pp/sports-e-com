@@ -16,7 +16,6 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../src/lib/supabase/types";
-import { STORE } from "../src/lib/config";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -50,20 +49,9 @@ async function seedStoreSettings() {
   const { error } = await supabase.from("store_settings").upsert(
     {
       id: "singleton",
-      store_name: STORE.name,
-      whatsapp_number: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "917034474858",
-      contact_phone: STORE.supportPhone,
-      contact_email: STORE.supportEmail,
-      address_line: STORE.address,
-      instagram_url: STORE.social.instagram,
-      facebook_url: null,
-      twitter_url: null,
-      youtube_url: null,
-      shipping_info: "Free delivery above ₹999. 3-5 business days across India.",
-      return_policy: "7-day easy returns on unused items in original packaging.",
-      free_shipping_threshold: 999,
-      seo_default_title: `${STORE.name} — ${STORE.tagline}`,
-      seo_default_description: "Premium football, cricket, tennis and multi-sport accessories.",
+      // Empty means "unset" — the app falls back to NEXT_PUBLIC_WHATSAPP_NUMBER
+      // at read time (see getWhatsAppNumber in settings-service.ts).
+      whatsapp_number: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
     },
     { onConflict: "id" }
   );

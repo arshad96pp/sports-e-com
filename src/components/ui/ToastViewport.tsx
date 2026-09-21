@@ -23,7 +23,7 @@ export function ToastViewport() {
             key={toast.id}
             role="status"
             onClick={() => dismissToast(toast.id)}
-            className={`pointer-events-auto flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-medium text-white shadow-lg ${
+            className={`pointer-events-auto flex cursor-pointer items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-medium text-white shadow-lg ${
               toast.leaving ? "animate-toast-out" : "animate-toast-in"
             }`}
           >

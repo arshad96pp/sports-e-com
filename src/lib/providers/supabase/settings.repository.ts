@@ -8,55 +8,22 @@ type SettingsUpdate = Database["public"]["Tables"]["store_settings"]["Update"];
 
 interface SettingsRow {
   id: string;
-  store_name: string;
-  logo_url: string | null;
   whatsapp_number: string;
-  contact_phone: string;
-  contact_email: string;
-  address_line: string;
-  instagram_url: string | null;
-  facebook_url: string | null;
-  twitter_url: string | null;
-  youtube_url: string | null;
-  shipping_info: string;
-  return_policy: string;
-  free_shipping_threshold: number;
-  seo_default_title: string;
-  seo_default_description: string;
 }
 
 function toDTO(s: SettingsRow): StoreSettingsDTO {
   return {
     id: s.id,
-    storeName: s.store_name,
-    logoUrl: s.logo_url,
     whatsappNumber: s.whatsapp_number,
-    contactPhone: s.contact_phone,
-    contactEmail: s.contact_email,
-    addressLine: s.address_line,
-    instagramUrl: s.instagram_url,
-    facebookUrl: s.facebook_url,
-    twitterUrl: s.twitter_url,
-    youtubeUrl: s.youtube_url,
-    shippingInfo: s.shipping_info,
-    returnPolicy: s.return_policy,
-    freeShippingThreshold: Number(s.free_shipping_threshold),
-    seoDefaultTitle: s.seo_default_title,
-    seoDefaultDescription: s.seo_default_description,
   };
 }
 
 const DEFAULTS = {
   id: "singleton",
-  store_name: "Enzo Sports",
-  whatsapp_number: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "917034474858",
-  contact_phone: "+91 7034474858",
-  contact_email: "officialenzosports@gmail.com",
-  address_line: "Kerala Gramin Bank Opposite, Trippanachi, 673641, Kerala, India",
-  shipping_info: "Free delivery above ₹999. 3-5 business days across India.",
-  return_policy: "7-day easy returns on unused items in original packaging.",
-  seo_default_title: "Enzo Sports — Gear Up. Play Better.",
-  seo_default_description: "Premium football, cricket, tennis and multi-sport accessories.",
+  // No hardcoded phone fallback here — an empty value means "unset", which
+  // settings-service.ts's getWhatsAppNumber() resolves against the
+  // NEXT_PUBLIC_WHATSAPP_NUMBER env var.
+  whatsapp_number: "",
 };
 
 export function createSupabaseSettingsRepository(): SettingsRepository {
@@ -73,36 +40,14 @@ export function createSupabaseSettingsRepository(): SettingsRepository {
       const { data: settings } = await supabase.from("store_settings").select("*").eq("id", "singleton").maybeSingle();
       if (settings) return toDTO(settings);
 
-      return toDTO({
-        ...DEFAULTS,
-        logo_url: null,
-        instagram_url: null,
-        facebook_url: null,
-        twitter_url: null,
-        youtube_url: null,
-        free_shipping_threshold: 999,
-      });
+      return toDTO(DEFAULTS);
     },
 
     async updateStoreSettings(data: StoreSettingsUpdate): Promise<StoreSettingsDTO> {
       const supabase = await createClient();
 
       const patch: SettingsUpdate = {};
-      if (data.storeName !== undefined) patch.store_name = data.storeName;
-      if (data.logoUrl !== undefined) patch.logo_url = data.logoUrl;
       if (data.whatsappNumber !== undefined) patch.whatsapp_number = data.whatsappNumber;
-      if (data.contactPhone !== undefined) patch.contact_phone = data.contactPhone;
-      if (data.contactEmail !== undefined) patch.contact_email = data.contactEmail;
-      if (data.addressLine !== undefined) patch.address_line = data.addressLine;
-      if (data.instagramUrl !== undefined) patch.instagram_url = data.instagramUrl;
-      if (data.facebookUrl !== undefined) patch.facebook_url = data.facebookUrl;
-      if (data.twitterUrl !== undefined) patch.twitter_url = data.twitterUrl;
-      if (data.youtubeUrl !== undefined) patch.youtube_url = data.youtubeUrl;
-      if (data.shippingInfo !== undefined) patch.shipping_info = data.shippingInfo;
-      if (data.returnPolicy !== undefined) patch.return_policy = data.returnPolicy;
-      if (data.freeShippingThreshold !== undefined) patch.free_shipping_threshold = data.freeShippingThreshold;
-      if (data.seoDefaultTitle !== undefined) patch.seo_default_title = data.seoDefaultTitle;
-      if (data.seoDefaultDescription !== undefined) patch.seo_default_description = data.seoDefaultDescription;
 
       const { data: updated } = await supabase
         .from("store_settings")

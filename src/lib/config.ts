@@ -1,13 +1,13 @@
 /**
  * Store-wide configuration.
  *
- * STORE_WHATSAPP_NUMBER should be set via the NEXT_PUBLIC_WHATSAPP_NUMBER
- * environment variable (see .env.local.example) so it can be changed per
- * deployment without touching UI code. Use full international format with
- * no leading "+" or spaces, e.g. 919876543210.
+ * STORE_WHATSAPP_NUMBER is the environment-level default (see
+ * .env.local.example), used only when Admin Settings has no WhatsApp number
+ * saved — see `getWhatsAppNumber` in settings-service.ts, the single place
+ * that resolves the two. Use full international format with no leading "+"
+ * or spaces, e.g. 919876543210.
  */
-export const STORE_WHATSAPP_NUMBER =
-  process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "917034474858";
+export const STORE_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
 
 /**
  * Canonical site URL used for metadata (canonical links, Open Graph, sitemap.xml,

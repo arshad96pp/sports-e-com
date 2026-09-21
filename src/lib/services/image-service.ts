@@ -13,7 +13,6 @@ const BUCKET_LIMITS: Record<ImageBucket, { maxWidth: number; maxHeight: number; 
   "product-images": { maxWidth: 1600, maxHeight: 1600, quality: 82 },
   "category-images": { maxWidth: 1200, maxHeight: 1200, quality: 80 },
   "banner-images": { maxWidth: 2400, maxHeight: 1600, quality: 78 },
-  "store-assets": { maxWidth: 800, maxHeight: 800, quality: 85 },
 };
 
 export type ImageUploadResult =

@@ -1,4 +1,4 @@
-export type ImageBucket = "product-images" | "category-images" | "banner-images" | "store-assets";
+export type ImageBucket = "product-images" | "category-images" | "banner-images";
 
 export type UploadResult =
   | { ok: true; path: string; publicUrl: string }

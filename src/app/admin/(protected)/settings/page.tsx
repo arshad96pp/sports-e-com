@@ -11,7 +11,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <AdminPageHeader title="Settings" description="Store configuration used across the site — never hardcoded in components." />
+      <AdminPageHeader title="Settings" description="Controls where customer orders are sent on WhatsApp." />
       <SettingsForm initial={settings} />
     </div>
   );

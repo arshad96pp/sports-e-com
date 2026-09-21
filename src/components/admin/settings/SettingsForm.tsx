@@ -1,21 +1,16 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import Image from "next/image";
-import { Upload } from "lucide-react";
+import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import type { StoreSettingsDTO } from "@/lib/services/settings-service";
-import { updateStoreSettingsAction, uploadStoreLogoAction } from "@/lib/actions/admin/settings-actions";
-import { optimizeImageForUpload } from "@/lib/utils/client-image";
+import { updateStoreSettingsAction } from "@/lib/actions/admin/settings-actions";
 
 export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
   const [values, setValues] = useState(initial);
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
-  const logoInputRef = useRef<HTMLInputElement>(null);
 
   function set<K extends keyof StoreSettingsDTO>(key: K, value: StoreSettingsDTO[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -30,22 +25,6 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
     });
   }
 
-  function handleLogoUpload(file: File | undefined) {
-    if (!file) return;
-    startTransition(async () => {
-      const optimized = await optimizeImageForUpload(file);
-      if (!optimized.ok) {
-        setMessage({ type: "error", text: optimized.error });
-        return;
-      }
-      const formData = new FormData();
-      formData.set("file", optimized.file);
-      const result = await uploadStoreLogoAction(formData);
-      if (result.ok && result.data) set("logoUrl", result.data.url);
-      else setMessage({ type: "error", text: result.error ?? "Logo upload failed." });
-    });
-  }
-
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {message && (
@@ -55,88 +34,11 @@ export function SettingsForm({ initial }: { initial: StoreSettingsDTO }) {
       )}
 
       <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="font-display text-base font-bold text-ink">Store Identity</h2>
-        <div className="mt-4 flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => logoInputRef.current?.click()}
-            className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-strong bg-surface text-muted hover:border-ink"
-          >
-            {values.logoUrl && <Image src={values.logoUrl} alt="" fill sizes="64px" className="object-contain" />}
-            <Upload className="relative z-10 h-4 w-4" />
-          </button>
-          <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => handleLogoUpload(e.target.files?.[0])} />
-          <div className="flex-1">
-            <Label htmlFor="settings-store-name" className="mb-1.5 text-xs font-semibold text-ink-soft">Store Name</Label>
-            <Input id="settings-store-name" required value={values.storeName} onChange={(e) => set("storeName", e.target.value)} className="h-10" />
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="font-display text-base font-bold text-ink">Contact</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="settings-whatsapp" className="mb-1.5 text-xs font-semibold text-ink-soft">WhatsApp Number (digits only, intl. format)</Label>
-            <Input id="settings-whatsapp" required value={values.whatsappNumber} onChange={(e) => set("whatsappNumber", e.target.value)} className="h-10" placeholder="919876543210" />
-          </div>
-          <div>
-            <Label htmlFor="settings-contact-phone" className="mb-1.5 text-xs font-semibold text-ink-soft">Contact Phone</Label>
-            <Input id="settings-contact-phone" required value={values.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} className="h-10" />
-          </div>
-          <div>
-            <Label htmlFor="settings-contact-email" className="mb-1.5 text-xs font-semibold text-ink-soft">Contact Email</Label>
-            <Input id="settings-contact-email" required type="email" value={values.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} className="h-10" />
-          </div>
-          <div>
-            <Label htmlFor="settings-shipping-threshold" className="mb-1.5 text-xs font-semibold text-ink-soft">Free Shipping Threshold (₹)</Label>
-            <Input id="settings-shipping-threshold" required type="number" min={0} value={values.freeShippingThreshold} onChange={(e) => set("freeShippingThreshold", Number(e.target.value))} className="h-10" />
-          </div>
-          <div className="sm:col-span-2">
-            <Label htmlFor="settings-address" className="mb-1.5 text-xs font-semibold text-ink-soft">Address</Label>
-            <Textarea id="settings-address" rows={2} value={values.addressLine} onChange={(e) => set("addressLine", e.target.value)} />
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="font-display text-base font-bold text-ink">Social Links</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {(
-            [
-              ["instagramUrl", "Instagram"],
-              ["facebookUrl", "Facebook"],
-              ["twitterUrl", "Twitter / X"],
-              ["youtubeUrl", "YouTube"],
-            ] as const
-          ).map(([key, label]) => (
-            <div key={key}>
-              <Label htmlFor={`settings-${key}`} className="mb-1.5 text-xs font-semibold text-ink-soft">{label}</Label>
-              <Input id={`settings-${key}`} value={values[key] ?? ""} onChange={(e) => set(key, e.target.value)} className="h-10" />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border bg-white p-5">
-        <h2 className="font-display text-base font-bold text-ink">Policies & SEO Defaults</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4">
-          <div>
-            <Label htmlFor="settings-shipping-info" className="mb-1.5 text-xs font-semibold text-ink-soft">Shipping Info</Label>
-            <Textarea id="settings-shipping-info" rows={2} value={values.shippingInfo} onChange={(e) => set("shippingInfo", e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="settings-return-policy" className="mb-1.5 text-xs font-semibold text-ink-soft">Return Policy</Label>
-            <Textarea id="settings-return-policy" rows={2} value={values.returnPolicy} onChange={(e) => set("returnPolicy", e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="settings-seo-title" className="mb-1.5 text-xs font-semibold text-ink-soft">Default SEO Title</Label>
-            <Input id="settings-seo-title" value={values.seoDefaultTitle} onChange={(e) => set("seoDefaultTitle", e.target.value)} className="h-10" />
-          </div>
-          <div>
-            <Label htmlFor="settings-seo-description" className="mb-1.5 text-xs font-semibold text-ink-soft">Default SEO Description</Label>
-            <Textarea id="settings-seo-description" rows={2} value={values.seoDefaultDescription} onChange={(e) => set("seoDefaultDescription", e.target.value)} />
-          </div>
+        <h2 className="font-display text-base font-bold text-ink">Orders</h2>
+        <div className="mt-4">
+          <Label htmlFor="settings-whatsapp" className="mb-1.5 text-xs font-semibold text-ink-soft">WhatsApp Number (digits only, intl. format)</Label>
+          <Input id="settings-whatsapp" value={values.whatsappNumber} onChange={(e) => set("whatsappNumber", e.target.value)} className="h-10" placeholder="919876543210" />
+          <p className="mt-1.5 text-xs text-muted">Orders are sent to this number as a WhatsApp message at checkout. Leave blank to use the site&apos;s default number instead.</p>
         </div>
       </section>
 

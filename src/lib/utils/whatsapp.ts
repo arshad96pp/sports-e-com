@@ -1,4 +1,3 @@
-import { STORE_WHATSAPP_NUMBER } from "@/lib/config";
 import { formatPrice } from "@/lib/utils/format";
 import type { Address } from "@/lib/types";
 
@@ -55,6 +54,6 @@ export function buildOrderMessage({ lines, total, address }: WhatsAppOrderPayloa
   ].join("\n");
 }
 
-export function buildWhatsAppLink(message: string, phoneNumber: string = STORE_WHATSAPP_NUMBER): string {
+export function buildWhatsAppLink(message: string, phoneNumber: string): string {
   return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 }

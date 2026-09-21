@@ -2,7 +2,7 @@
 
 import { addressSchema } from "@/lib/validations/auth";
 import { buildOrderMessage, buildWhatsAppLink, type WhatsAppOrderLine } from "@/lib/utils/whatsapp";
-import { getStoreSettings } from "@/lib/services/settings-service";
+import { getWhatsAppNumber } from "@/lib/services/settings-service";
 import { getCurrentUser } from "@/lib/auth/session";
 import * as orderService from "@/lib/services/order-service";
 import type { Address } from "@/lib/types";
@@ -63,8 +63,8 @@ export async function buildWhatsAppOrderLinkAction(
       color: item.color,
     })),
   });
-  const settings = await getStoreSettings();
-  const whatsappUrl = buildWhatsAppLink(message, settings.whatsappNumber);
+  const whatsappNumber = await getWhatsAppNumber();
+  const whatsappUrl = buildWhatsAppLink(message, whatsappNumber);
 
   return { ok: true, whatsappUrl, orderNumber: order.orderNumber };
 }

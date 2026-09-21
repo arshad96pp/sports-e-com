@@ -766,61 +766,19 @@ export type Database = {
       }
       store_settings: {
         Row: {
-          address_line: string
-          contact_email: string
-          contact_phone: string
-          facebook_url: string | null
-          free_shipping_threshold: number
           id: string
-          instagram_url: string | null
-          logo_url: string | null
-          return_policy: string
-          seo_default_description: string
-          seo_default_title: string
-          shipping_info: string
-          store_name: string
-          twitter_url: string | null
           updated_at: string
           whatsapp_number: string
-          youtube_url: string | null
         }
         Insert: {
-          address_line: string
-          contact_email: string
-          contact_phone: string
-          facebook_url?: string | null
-          free_shipping_threshold?: number
           id?: string
-          instagram_url?: string | null
-          logo_url?: string | null
-          return_policy?: string
-          seo_default_description?: string
-          seo_default_title?: string
-          shipping_info?: string
-          store_name?: string
-          twitter_url?: string | null
           updated_at?: string
           whatsapp_number: string
-          youtube_url?: string | null
         }
         Update: {
-          address_line?: string
-          contact_email?: string
-          contact_phone?: string
-          facebook_url?: string | null
-          free_shipping_threshold?: number
           id?: string
-          instagram_url?: string | null
-          logo_url?: string | null
-          return_policy?: string
-          seo_default_description?: string
-          seo_default_title?: string
-          shipping_info?: string
-          store_name?: string
-          twitter_url?: string | null
           updated_at?: string
           whatsapp_number?: string
-          youtube_url?: string | null
         }
         Relationships: []
       }
