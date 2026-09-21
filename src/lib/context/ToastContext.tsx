@@ -8,6 +8,7 @@ export interface ToastMessage {
   id: number;
   text: string;
   kind: ToastKind;
+  leaving?: boolean;
 }
 
 interface ToastContextValue {
@@ -18,13 +19,18 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+const EXIT_ANIMATION_MS = 200;
+
 let toastId = 0;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const dismissToast = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, EXIT_ANIMATION_MS);
   }, []);
 
   const showToast = useCallback(

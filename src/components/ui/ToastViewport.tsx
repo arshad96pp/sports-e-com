@@ -15,7 +15,7 @@ export function ToastViewport() {
   const { toasts, dismissToast } = useToast();
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-100 flex flex-col items-center gap-2 px-4 sm:bottom-6">
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-100 flex flex-col items-center gap-2 px-4 sm:top-6">
       {toasts.map((toast) => {
         const Icon = ICONS[toast.kind];
         return (
@@ -23,7 +23,9 @@ export function ToastViewport() {
             key={toast.id}
             role="status"
             onClick={() => dismissToast(toast.id)}
-            className="pointer-events-auto flex animate-slide-up items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-medium text-white shadow-lg"
+            className={`pointer-events-auto flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-medium text-white shadow-lg ${
+              toast.leaving ? "animate-toast-out" : "animate-toast-in"
+            }`}
           >
             <Icon className="h-4 w-4 shrink-0 text-accent" />
             {toast.text}

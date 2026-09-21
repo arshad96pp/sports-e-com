@@ -15,7 +15,7 @@ export function HomeCampaignBanner() {
         fill
         loading="eager"
         sizes="100vw"
-        className="object-cover object-[center_40%]"
+        className="object-cover object-[10%_52%] sm:object-[70%_46%]"
       />
       <div className="absolute inset-0 bg-linear-to-t from-ink/45 via-transparent to-transparent" />
 
