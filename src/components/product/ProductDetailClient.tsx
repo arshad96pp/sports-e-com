@@ -6,9 +6,9 @@ import { BadgeCheck, RotateCcw, ShieldCheck, Truck, ZoomIn } from "lucide-react"
 import type { Product } from "@/lib/types";
 import { getDiscountPercent } from "@/lib/data/products";
 import type { ReviewDTO } from "@/lib/services/review-service";
-import { ProductReviewForm } from "@/components/product/ProductReviewForm";
+import { ProductReviews } from "@/components/product/ProductReviews";
 import { RichText } from "@/components/product/RichText";
-import { formatDate, formatPrice } from "@/lib/utils/format";
+import { formatPrice } from "@/lib/utils/format";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { ProductArt } from "@/components/product/ProductArt";
@@ -42,7 +42,6 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
   const { addItem } = useCart();
   const { openBuyNow } = useBuyNow();
   const discount = getDiscountPercent(product);
-  const [reviewList, setReviewList] = useState(reviews);
 
   const activePhoto = product.images[activeImage] ?? product.images[0];
   const activePhotoSrc = brokenImages[activeImage] ? null : activePhoto?.url;
@@ -310,45 +309,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
         )}
       </div>
 
-      {/* Reviews */}
-      <div className="mt-14 max-w-3xl border-t border-border pt-10">
-        {reviewList.length > 0 && (
-          <h2 className="font-display text-xl font-bold text-ink">Customer Reviews</h2>
-        )}
-
-        <div className="mt-4">
-          <ProductReviewForm
-            productId={product.id}
-            onReviewAdded={(review) => setReviewList((prev) => [review, ...prev])}
-          />
-        </div>
-
-        {reviewList.length > 0 && (
-          <div className="mt-4 flex flex-col gap-4">
-            {reviewList.map((review) => (
-              <div key={review.id} className="rounded-xl border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-xs font-bold text-ink">
-                      {review.author[0]}
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{review.author}</p>
-                      {review.verified && <p className="text-[11px] text-success">Verified Purchase</p>}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-soft">{formatDate(review.date)}</span>
-                </div>
-                <div className="mt-2.5">
-                  <RatingStars rating={review.rating} showCount={false} />
-                </div>
-                <p className="mt-2 text-sm font-semibold text-ink">{review.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-ink-soft">{review.comment}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ProductReviews productId={product.id} reviews={reviews} />
 
       {/* Related products */}
       {related.length > 0 && (

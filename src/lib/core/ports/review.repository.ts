@@ -31,4 +31,6 @@ export interface ReviewRepository {
   getAllReviews(): Promise<AdminReviewDTO[]>;
   setReviewApproval(reviewId: string, isApproved: boolean): Promise<void>;
   deleteReview(reviewId: string): Promise<void>;
+  /** Customer self-delete — must no-op/throw unless `userId` owns the row. */
+  deleteOwnReview(reviewId: string, userId: string): Promise<void>;
 }

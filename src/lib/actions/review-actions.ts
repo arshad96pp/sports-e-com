@@ -16,24 +16,34 @@ const reviewInputSchema = z.object({
 
 export type ReviewEligibility = "guest" | "already_reviewed" | "not_purchased" | "eligible";
 
+export interface ReviewEligibilityResult {
+  eligibility: ReviewEligibility;
+  ownReviewId: string | null;
+}
+
 export interface AddReviewResult {
   ok: boolean;
   error?: string;
   review?: ReviewDTO;
 }
 
-/** Lets the review form decide what to show (login prompt, "already reviewed", the form itself) without exposing why to a guest. */
-export async function getReviewEligibilityAction(productId: string): Promise<ReviewEligibility> {
+export interface DeleteOwnReviewResult {
+  ok: boolean;
+  error?: string;
+}
+
+/** Lets the review section decide whether to show Add Review / Delete without exposing why to a guest. */
+export async function getReviewEligibilityAction(productId: string): Promise<ReviewEligibilityResult> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "customer") return "guest";
+  if (!user || user.role !== "customer") return { eligibility: "guest", ownReviewId: null };
 
   const existing = await reviewService.getUserReviewForProduct(productId, user.id);
-  if (existing) return "already_reviewed";
+  if (existing) return { eligibility: "already_reviewed", ownReviewId: existing.id };
 
   const purchased = await orderService.hasPurchasedProduct(productId);
-  if (!purchased) return "not_purchased";
+  if (!purchased) return { eligibility: "not_purchased", ownReviewId: null };
 
-  return "eligible";
+  return { eligibility: "eligible", ownReviewId: null };
 }
 
 export async function addReviewAction(input: {
@@ -78,5 +88,20 @@ export async function addReviewAction(input: {
     return { ok: true, review };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Could not submit your review." };
+  }
+}
+
+export async function deleteOwnReviewAction(reviewId: string): Promise<DeleteOwnReviewResult> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "customer") {
+    return { ok: false, error: "Please log in to delete your review." };
+  }
+
+  try {
+    await reviewService.deleteOwnReview(reviewId, user.id);
+    revalidatePath("/product/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Could not delete your review." };
   }
 }

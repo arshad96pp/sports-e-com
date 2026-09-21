@@ -102,5 +102,21 @@ export function createSupabaseReviewRepository(): ReviewRepository {
       const supabase = await createClient();
       await supabase.from("reviews").delete().eq("id", reviewId);
     },
+
+    async deleteOwnReview(reviewId: string, userId: string): Promise<void> {
+      const supabase = await createClient();
+      const { data, error: fetchError } = await supabase
+        .from("reviews")
+        .select("id, user_id")
+        .eq("id", reviewId)
+        .maybeSingle();
+
+      if (fetchError) throw new Error("Could not delete your review.");
+      if (!data) throw new Error("Review not found.");
+      if (data.user_id !== userId) throw new Error("You can only delete your own review.");
+
+      const { error } = await supabase.from("reviews").delete().eq("id", reviewId).eq("user_id", userId);
+      if (error) throw new Error(error.message);
+    },
   };
 }

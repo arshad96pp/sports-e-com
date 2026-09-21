@@ -1,174 +1,216 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Star } from "lucide-react";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useRef, useState } from "react";
+import { Loader2, Star } from "lucide-react";
 import { useToast } from "@/lib/context/ToastContext";
-import { addReviewAction, getReviewEligibilityAction, type ReviewEligibility } from "@/lib/actions/review-actions";
+import { addReviewAction } from "@/lib/actions/review-actions";
 import type { ReviewDTO } from "@/lib/services/review-service";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { DialogFooter } from "@/components/ui/dialog";
+
+const FIELD_LABEL_CLASS = "mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-gray-700";
+const UNDERLINE_FIELD_CLASS =
+  "h-12 rounded-none border-0 border-b border-gray-200 bg-transparent px-0 text-sm font-medium text-ink shadow-none focus-visible:border-ink focus-visible:ring-0 disabled:bg-transparent disabled:opacity-100";
+const UNDERLINE_TEXTAREA_CLASS =
+  "min-h-24 resize-none rounded-none border-0 border-b border-gray-200 bg-transparent px-0 text-sm font-medium text-ink shadow-none focus-visible:border-ink focus-visible:ring-0 disabled:bg-transparent disabled:opacity-100";
+const ACTION_BUTTON_CLASS = "rounded-[12px] px-6 py-2.5 text-[11px] font-bold uppercase tracking-[0.2em]";
+
+const SUBMIT_ERROR = "Could not submit your review.";
 
 interface ProductReviewFormProps {
   productId: string;
-  onReviewAdded: (review: ReviewDTO) => void;
+  submitting: boolean;
+  onSubmittingChange: (submitting: boolean) => void;
+  onSuccess: (review: ReviewDTO) => void;
+  onCancel: () => void;
 }
 
-export function ProductReviewForm({ productId, onReviewAdded }: ProductReviewFormProps) {
-  const { isAuthenticated, hydrated } = useAuth();
+export function ProductReviewForm({
+  productId,
+  submitting,
+  onSubmittingChange,
+  onSuccess,
+  onCancel,
+}: ProductReviewFormProps) {
   const { showToast } = useToast();
-  const [eligibility, setEligibility] = useState<ReviewEligibility | "loading">("loading");
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const starRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  useEffect(() => {
-    if (!hydrated || !isAuthenticated) return;
-    let cancelled = false;
-    getReviewEligibilityAction(productId).then((result) => {
-      if (!cancelled) setEligibility(result);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, isAuthenticated, productId]);
-
-  if (!hydrated) return null;
-
-  if (!isAuthenticated) {
-    return (
-      <div className="rounded-xl border border-border p-4 text-sm text-ink-soft">
-        <Link href="/login" className="font-semibold text-ink underline underline-offset-2">
-          Log in
-        </Link>{" "}
-        to write a review.
-      </div>
-    );
+  function selectRating(next: number) {
+    setRating(next);
+    if (error === "Choose a rating") setError(null);
   }
 
-  if (eligibility === "loading") return null;
-
-  // A signed-in super admin is still "authenticated" but isn't a shopper — the
-  // server action returns "guest" for them (see review-actions.ts) rather than
-  // a distinct value, so it needs its own check here, not just `isAuthenticated`.
-  if (eligibility === "guest") {
-    return (
-      <div className="rounded-xl border border-border p-4 text-sm text-ink-soft">
-        <Link href="/login" className="font-semibold text-ink underline underline-offset-2">
-          Log in
-        </Link>{" "}
-        to write a review.
-      </div>
-    );
-  }
-
-  if (eligibility === "already_reviewed") {
-    return (
-      <div className="rounded-xl border border-border p-4 text-sm text-ink-soft">
-        You&apos;ve already reviewed this product.
-      </div>
-    );
-  }
-
-  if (eligibility === "not_purchased") {
-    return (
-      <div className="rounded-xl border border-border p-4 text-sm text-ink-soft">
-        You can write a review after purchasing this product.
-      </div>
-    );
+  function handleRatingKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, current: number) {
+    let next: number | null = null;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") next = Math.min(5, (rating || current) + 1);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") next = Math.max(1, (rating || current) - 1);
+    else if (e.key === "Home") next = 1;
+    else if (e.key === "End") next = 5;
+    if (next === null) return;
+    e.preventDefault();
+    selectRating(next);
+    starRefs.current[next - 1]?.focus();
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
+
     if (rating < 1) {
       setError("Choose a rating");
       return;
     }
-    setSubmitting(true);
-    setError(null);
-    const result = await addReviewAction({ productId, rating, title, comment });
-    setSubmitting(false);
-    if (!result.ok || !result.review) {
-      setError(result.error ?? "Could not submit your review.");
+    if (!comment.trim()) {
+      setError("Write a few words about the product");
       return;
     }
-    onReviewAdded(result.review);
-    setEligibility("already_reviewed");
-    setRating(0);
-    setTitle("");
-    setComment("");
-    showToast("Review submitted", "success");
+
+    onSubmittingChange(true);
+    setError(null);
+
+    try {
+      const result = await addReviewAction({ productId, rating, title, comment });
+      if (!result.ok || !result.review) {
+        showToast(result.error ?? SUBMIT_ERROR, "error");
+        return;
+      }
+      onSuccess(result.review);
+    } catch {
+      showToast(SUBMIT_ERROR, "error");
+    } finally {
+      onSubmittingChange(false);
+    }
   }
 
+  const previewRating = hoverRating || rating;
+  const ratingError = error === "Choose a rating";
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-xl border border-border p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-ink">Write a Review</p>
-
-      <div>
-        <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Your Rating</Label>
-        <div className="flex items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              aria-label={`${n} star${n > 1 ? "s" : ""}`}
-              onMouseEnter={() => setHoverRating(n)}
-              onClick={() => setRating(n)}
-              className="p-0.5"
-            >
-              <Star
-                className={`h-6 w-6 transition-colors ${
-                  n <= (hoverRating || rating) ? "fill-signal text-signal" : "text-border-strong"
-                }`}
-              />
-            </button>
-          ))}
+    <form onSubmit={handleSubmit} noValidate className="contents">
+      <div className="flex flex-col gap-5">
+        <div>
+          <Label id="review-rating-label" className={FIELD_LABEL_CLASS}>
+            Your Rating
+          </Label>
+          <div
+            role="radiogroup"
+            aria-labelledby="review-rating-label"
+            aria-required="true"
+            aria-invalid={ratingError}
+            aria-describedby={ratingError ? "review-field-error" : undefined}
+            className="flex items-center"
+            onMouseLeave={() => setHoverRating(0)}
+          >
+            {[1, 2, 3, 4, 5].map((n) => {
+              const active = n <= previewRating;
+              return (
+                <button
+                  key={n}
+                  ref={(el) => {
+                    starRefs.current[n - 1] = el;
+                  }}
+                  type="button"
+                  role="radio"
+                  aria-checked={rating === n}
+                  aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                  tabIndex={rating === n || (rating === 0 && n === 1) ? 0 : -1}
+                  disabled={submitting}
+                  onMouseEnter={() => setHoverRating(n)}
+                  onFocus={() => setHoverRating(n)}
+                  onBlur={() => setHoverRating(0)}
+                  onClick={() => selectRating(n)}
+                  onKeyDown={(e) => handleRatingKeyDown(e, n)}
+                  className="cursor-pointer rounded-sm p-1 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/25 disabled:cursor-not-allowed"
+                >
+                  <Star
+                    className={`h-5 w-5 transition-colors duration-150 ${
+                      active ? "fill-ink text-ink" : "fill-none text-border-strong"
+                    }`}
+                    strokeWidth={1.5}
+                  />
+                </button>
+              );
+            })}
+            {previewRating > 0 && (
+              <span className="ml-2 text-xs font-medium text-muted">{previewRating} of 5</span>
+            )}
+          </div>
         </div>
+
+        <div>
+          <Label htmlFor="review-title" className={FIELD_LABEL_CLASS}>
+            Title (optional)
+          </Label>
+          <Input
+            id="review-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Sum up your experience"
+            maxLength={120}
+            disabled={submitting}
+            className={UNDERLINE_FIELD_CLASS}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="review-comment" className={FIELD_LABEL_CLASS}>
+            Your Review
+          </Label>
+          <Textarea
+            id="review-comment"
+            value={comment}
+            onChange={(e) => {
+              setComment(e.target.value);
+              if (error === "Write a few words about the product") setError(null);
+            }}
+            placeholder="Share your experience with this product"
+            maxLength={2000}
+            rows={4}
+            required
+            disabled={submitting}
+            aria-invalid={error === "Write a few words about the product"}
+            aria-describedby={error === "Write a few words about the product" ? "review-field-error" : undefined}
+            className={UNDERLINE_TEXTAREA_CLASS}
+          />
+        </div>
+
+        {error && (
+          <p id="review-field-error" role="alert" className="text-xs font-medium text-signal">
+            {error}
+          </p>
+        )}
       </div>
 
-      <div>
-        <Label htmlFor="review-title" className="mb-1.5 text-xs font-semibold text-ink-soft">
-          Title (optional)
-        </Label>
-        <Input
-          id="review-title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Sum up your experience"
-          maxLength={120}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="review-comment" className="mb-1.5 text-xs font-semibold text-ink-soft">
-          Review
-        </Label>
-        <Textarea
-          id="review-comment"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Share your experience with this product"
-          maxLength={2000}
-          rows={3}
-          required
-        />
-      </div>
-
-      {error && <p className="text-xs font-medium text-signal">{error}</p>}
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="tap-target self-start rounded-full bg-ink px-6 text-sm font-bold text-white disabled:opacity-60"
-      >
-        {submitting ? "Submitting..." : "Submit Review"}
-      </button>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={submitting}
+          onClick={onCancel}
+          className={ACTION_BUTTON_CLASS}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting} aria-busy={submitting} className={ACTION_BUTTON_CLASS}>
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            "Submit Review"
+          )}
+        </Button>
+      </DialogFooter>
     </form>
   );
 }

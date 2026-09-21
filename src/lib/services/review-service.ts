@@ -28,3 +28,7 @@ export async function setReviewApproval(reviewId: string, isApproved: boolean): 
 export async function deleteReview(reviewId: string): Promise<void> {
   return getReviewRepository().deleteReview(reviewId);
 }
+
+export async function deleteOwnReview(reviewId: string, userId: string): Promise<void> {
+  return getReviewRepository().deleteOwnReview(reviewId, userId);
+}
