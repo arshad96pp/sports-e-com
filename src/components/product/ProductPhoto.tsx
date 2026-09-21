@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { cn } from "cn";
 import type { Product } from "@/lib/types";
-
-export const FALLBACK_PRODUCT_IMAGE = "/images/product-placeholder-dark.webp";
+import { ProductPlaceholder } from "@/components/product/ProductPlaceholder";
 
 const STUDIO_SURFACE = "bg-[#F7F7F5]";
-const FALLBACK_SURFACE = "bg-[#121212]";
 
 interface ProductPhotoProps {
   product: Pick<Product, "id" | "category" | "name" | "images">;
@@ -33,18 +31,19 @@ function isAllowedRemoteUrl(url: string): boolean {
   }
 }
 
-export function resolveProductImageSrc(url: string | null | undefined): string {
-  if (typeof url !== "string") return FALLBACK_PRODUCT_IMAGE;
+/** Resolves a usable photo URL, or `null` when it's missing/invalid and the shared placeholder should render instead. */
+export function resolveProductImageSrc(url: string | null | undefined): string | null {
+  if (typeof url !== "string") return null;
   const trimmed = url.trim();
-  if (!trimmed) return FALLBACK_PRODUCT_IMAGE;
+  if (!trimmed) return null;
   if (trimmed.startsWith("/")) return trimmed;
   if (isAllowedRemoteUrl(trimmed)) return trimmed;
-  return FALLBACK_PRODUCT_IMAGE;
+  return null;
 }
 
-/** True when the product has no usable photo and will render the dark studio fallback. */
+/** True when the product has no usable photo and will render the shared placeholder. */
 export function usesFallbackProductImage(product: Pick<Product, "images">): boolean {
-  return resolveProductImageSrc(product.images[0]?.url) === FALLBACK_PRODUCT_IMAGE;
+  return resolveProductImageSrc(product.images[0]?.url) === null;
 }
 
 /** A product's primary photo, falling back to a shared studio placeholder when the image is missing or invalid. */
@@ -75,37 +74,31 @@ export function ProductPhoto({
   // don't also add `relative`, which would win the position property in
   // Tailwind's cascade and break the overlay.
   const needsRelative = !/\babsolute\b/.test(className);
-  const isFallback = src === FALLBACK_PRODUCT_IMAGE;
-  const showHover =
-    swapOnHover &&
-    hoverSrc !== FALLBACK_PRODUCT_IMAGE &&
-    hoverSrc !== src;
-  const objectFit = fit === "contain" && !isFallback ? "object-contain" : "object-cover";
-  const surface = isFallback
-    ? FALLBACK_SURFACE
-    : studio || fit === "contain"
-      ? STUDIO_SURFACE
-      : "";
+  const isFallback = src === null;
+  const showHover = swapOnHover && hoverSrc !== null && hoverSrc !== src;
+  const objectFit = fit === "contain" ? "object-contain" : "object-cover";
+  const surface = !isFallback && (studio || fit === "contain") ? STUDIO_SURFACE : "";
 
   return (
     <div className={`overflow-hidden ${surface}${surface ? " " : ""}${needsRelative ? "relative " : ""}${className}`}>
-      <Image
-        src={src}
-        alt={photo?.alt || product.name}
-        fill
-        sizes={sizes}
-        priority={priority}
-        className={cn(
-          objectFit,
-          imageClassName,
-          isFallback && "p-0",
-          showHover && "transition-opacity duration-300 ease-out group-hover:opacity-0"
-        )}
-        onError={() => {
-          if (src !== FALLBACK_PRODUCT_IMAGE) setSrc(FALLBACK_PRODUCT_IMAGE);
-        }}
-      />
-      {showHover && (
+      {isFallback ? (
+        <ProductPlaceholder className="absolute inset-0 h-full w-full" />
+      ) : (
+        <Image
+          src={src}
+          alt={photo?.alt || product.name}
+          fill
+          sizes={sizes}
+          priority={priority}
+          className={cn(
+            objectFit,
+            imageClassName,
+            showHover && "transition-opacity duration-300 ease-out group-hover:opacity-0"
+          )}
+          onError={() => setSrc(null)}
+        />
+      )}
+      {showHover && hoverSrc && (
         <Image
           src={hoverSrc}
           alt={product.images[1]?.alt || product.name}
@@ -116,9 +109,7 @@ export function ProductPhoto({
             imageClassName,
             "opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100"
           )}
-          onError={() => {
-            if (hoverSrc !== FALLBACK_PRODUCT_IMAGE) setHoverSrc(FALLBACK_PRODUCT_IMAGE);
-          }}
+          onError={() => setHoverSrc(null)}
         />
       )}
     </div>
