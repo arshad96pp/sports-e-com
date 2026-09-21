@@ -1,5 +1,6 @@
 import "server-only";
 import { getProductRepository } from "@/lib/config/providers";
+import { sanitizeDescriptionHtml } from "@/lib/utils/sanitize-html";
 import type {
   AdminProductDetail,
   AdminProductListItem,
@@ -26,7 +27,8 @@ function assertValidPricing(values: ProductFormValues): void {
 
 export async function createProduct(values: ProductFormValues, options?: { autoSku?: boolean }): Promise<{ id: string }> {
   assertValidPricing(values);
-  return getProductRepository().createProduct(values, options);
+  const sanitized = { ...values, description: sanitizeDescriptionHtml(values.description) };
+  return getProductRepository().createProduct(sanitized, options);
 }
 
 export async function previewNextSku(slugOrPrefix: string): Promise<string> {
@@ -39,7 +41,8 @@ export async function isSkuAvailable(sku: string, excludeId?: string): Promise<b
 
 export async function updateProduct(id: string, values: ProductFormValues): Promise<void> {
   assertValidPricing(values);
-  return getProductRepository().updateProduct(id, values);
+  const sanitized = { ...values, description: sanitizeDescriptionHtml(values.description) };
+  return getProductRepository().updateProduct(id, sanitized);
 }
 
 export async function deleteProduct(id: string): Promise<{ imageUrls: string[] }> {

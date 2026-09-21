@@ -27,7 +27,7 @@ export function WishlistHeartButton({ productId, size = "sm", className = "" }: 
         toggle(productId);
       }}
       className={cn(
-        `flex ${dim} shrink-0 items-center justify-center rounded-full bg-white/90 backdrop-blur transition-transform duration-150 ease-out hover:scale-[1.05] active:scale-95`,
+        `flex ${dim} shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/90 backdrop-blur transition-transform duration-150 ease-out hover:scale-[1.05] active:scale-95`,
         className
       )}
     >

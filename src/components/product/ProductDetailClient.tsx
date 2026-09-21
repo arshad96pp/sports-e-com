@@ -7,6 +7,7 @@ import type { Product } from "@/lib/types";
 import { getDiscountPercent } from "@/lib/data/products";
 import type { ReviewDTO } from "@/lib/services/review-service";
 import { ProductReviewForm } from "@/components/product/ProductReviewForm";
+import { RichText } from "@/components/product/RichText";
 import { formatDate, formatPrice } from "@/lib/utils/format";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
@@ -78,11 +79,11 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
         ]}
       />
 
-      <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+      <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12 xl:gap-16">
         {/* Gallery */}
         <div>
           <div
-            className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border"
+            className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-3xl border border-border bg-[#f5f5f3] shadow-[0_1px_3px_rgba(16,24,32,0.04)]"
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setZoomPos({
@@ -112,7 +113,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
             ) : (
               <ProductArt product={product} className="absolute inset-0 h-full w-full" />
             )}
-            <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-muted">
+            <span className="pointer-events-none absolute right-3 top-3 hidden items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-muted sm:flex">
               <ZoomIn className="h-3 w-3" /> Hover to zoom
             </span>
             <div className="absolute left-3 top-3">
@@ -121,14 +122,16 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
           </div>
 
           {product.images.length > 1 && (
-            <div className="mt-3 flex gap-2.5">
+            <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
               {product.images.map((img, i) => (
                 <button
                   key={img.url}
                   type="button"
+                  aria-label={`Show image ${i + 1}`}
+                  aria-pressed={activeImage === i}
                   onClick={() => setActiveImage(i)}
-                  className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors sm:h-20 sm:w-20 ${
-                    activeImage === i ? "border-ink" : "border-border"
+                  className={`relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 transition-colors sm:h-20 sm:w-20 ${
+                    activeImage === i ? "border-ink" : "border-border hover:border-border-strong"
                   }`}
                 >
                   {brokenImages[i] ? (
@@ -150,14 +153,14 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
         </div>
 
         {/* Info */}
-        <div>
+        <div className="flex flex-col">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">{product.brand}</p>
-          <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl">
             {product.name}
           </h1>
           <div className="mt-2.5 flex items-center gap-3">
             <RatingStars rating={product.rating} reviewCount={product.reviewCount} size="md" />
-            <span className={`text-xs font-medium ${product.inStock ? "text-success" : "text-signal"}`}>
+            <span className={`text-xs font-semibold ${product.inStock ? "text-success" : "text-signal"}`}>
               {product.inStock ? "In Stock" : "Out of Stock"}
             </span>
           </div>
@@ -166,6 +169,10 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
             <PriceBlock price={product.price} mrp={product.mrp} size="lg" />
             <p className="mt-1 text-xs text-muted">Inclusive of all taxes</p>
           </div>
+
+          {product.shortInfo && (
+            <p className="mt-4 text-sm leading-relaxed text-ink-soft">{product.shortInfo}</p>
+          )}
 
           {product.colors.length > 0 && (
             <div className="mt-5">
@@ -177,9 +184,12 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
                   <button
                     key={c}
                     type="button"
+                    aria-pressed={color === c}
                     onClick={() => setColor(c)}
-                    className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
-                      color === c ? "border-ink bg-ink text-white" : "border-border-strong text-ink-soft"
+                    className={`cursor-pointer rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
+                      color === c
+                        ? "border-ink bg-ink text-white"
+                        : "border-border-strong text-ink-soft hover:border-ink"
                     }`}
                   >
                     {c}
@@ -199,9 +209,12 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
                   <button
                     key={s}
                     type="button"
+                    aria-pressed={size === s}
                     onClick={() => setSize(s)}
-                    className={`min-w-12 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-                      size === s ? "border-ink bg-ink text-white" : "border-border-strong text-ink-soft"
+                    className={`min-w-12 cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                      size === s
+                        ? "border-ink bg-ink text-white"
+                        : "border-border-strong text-ink-soft hover:border-ink"
                     }`}
                   >
                     {s}
@@ -221,7 +234,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
               type="button"
               onClick={handleAddToCart}
               disabled={!product.inStock}
-              className="tap-target flex-1 rounded-full border-2 border-ink text-sm font-bold text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:border-border-strong disabled:text-muted-soft disabled:hover:bg-transparent"
+              className="tap-target flex-1 cursor-pointer rounded-full border-2 border-ink text-sm font-bold text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:border-border-strong disabled:text-muted-soft disabled:hover:bg-transparent"
             >
               {product.inStock ? "Add to Cart" : "Out of Stock"}
             </button>
@@ -229,7 +242,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
               type="button"
               onClick={handleBuyNow}
               disabled={!product.inStock}
-              className="tap-target flex-1 rounded-full bg-ink text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-border-strong disabled:text-muted-soft disabled:active:scale-100"
+              className="tap-target flex-1 cursor-pointer rounded-full bg-ink text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-border-strong disabled:text-muted-soft disabled:active:scale-100"
             >
               Buy Now
             </button>
@@ -256,38 +269,49 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
               <p className="text-xs text-ink-soft">6-month manufacturing warranty</p>
             </div>
           </div>
-
-          <p className="mt-6 text-sm leading-relaxed text-ink-soft">{product.description}</p>
-
-          <div className="mt-6">
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-ink">Highlights</h3>
-            <ul className="flex flex-col gap-2">
-              {product.highlights.map((h, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-ink-soft">
-                  <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                  {h}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
 
-      {/* Specifications */}
-      <div className="mt-12 max-w-2xl">
-        <h2 className="font-display text-xl font-bold text-ink">Specifications</h2>
-        <dl className="mt-4 divide-y divide-border rounded-xl border border-border">
-          {product.specs.map((spec) => (
-            <div key={spec.label} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
-              <dt className="text-muted">{spec.label}</dt>
-              <dd className="font-medium text-ink">{spec.value}</dd>
+      {/* Product details: description, highlights, specifications */}
+      <div className="mt-14 grid grid-cols-1 gap-10 border-t border-border pt-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
+        <div className="min-w-0">
+          <h2 className="font-display text-xl font-bold text-ink">Product Details</h2>
+          <div className="mt-4">
+            <RichText html={product.description} />
+          </div>
+
+          {product.highlights.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-ink">Highlights</h3>
+              <ul className="mt-3 flex flex-col gap-2.5">
+                {product.highlights.map((h, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-ink-soft">
+                    <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                    {h}
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
-        </dl>
+          )}
+        </div>
+
+        {product.specs.length > 0 && (
+          <div className="lg:border-l lg:border-border lg:pl-10">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-ink">Specifications</h3>
+            <dl className="mt-4 flex flex-col divide-y divide-border">
+              {product.specs.map((spec) => (
+                <div key={spec.label} className="flex items-baseline justify-between gap-4 py-2.5 text-sm">
+                  <dt className="text-muted">{spec.label}</dt>
+                  <dd className="text-right font-medium text-ink">{spec.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
       </div>
 
       {/* Reviews */}
-      <div className="mt-12 max-w-3xl">
+      <div className="mt-14 max-w-3xl border-t border-border pt-10">
         {reviewList.length > 0 && (
           <h2 className="font-display text-xl font-bold text-ink">Customer Reviews</h2>
         )}
@@ -328,7 +352,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
 
       {/* Related products */}
       {related.length > 0 && (
-        <div className="mt-14">
+        <div className="mt-14 border-t border-border pt-10">
           <h2 className="mb-4 font-display text-xl font-bold text-ink">You May Also Like</h2>
           <ProductGrid products={related} />
         </div>

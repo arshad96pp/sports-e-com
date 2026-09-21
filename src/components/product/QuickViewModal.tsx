@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuickView } from "@/lib/context/QuickViewContext";
 import { useCart } from "@/lib/context/CartContext";
 import { getDiscountPercent } from "@/lib/data/products";
+import { stripHtmlToText } from "@/lib/utils/format";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { PriceBlock } from "@/components/ui/PriceBlock";
@@ -54,7 +55,7 @@ export function QuickViewModal() {
                 {discount > 0 && <p className="mt-1 text-xs text-muted">You save on this deal</p>}
               </div>
               {!product.inStock && <p className="mt-2 text-xs font-medium text-signal">Out of Stock</p>}
-              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-soft">{product.description}</p>
+              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-soft">{stripHtmlToText(product.description)}</p>
 
               {product.sizes.length > 0 && (
                 <div className="mt-4">

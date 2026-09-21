@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RichTextEditor } from "@/components/admin/products/RichTextEditor";
 import type { AdminCategory } from "@/lib/services/admin-category-service";
 import type { ProductFormValues } from "@/lib/services/admin-product-service";
 import { createProductAction, updateProductAction, previewSkuAction, checkSkuAvailableAction } from "@/lib/actions/admin/product-actions";
@@ -151,6 +152,11 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
       return;
     }
 
+    if (values.description.replace(/<[^>]*>/g, "").trim().length === 0) {
+      setError("Description is required.");
+      return;
+    }
+
     startTransition(async () => {
       const result = productId
         ? await updateProductAction(productId, values)
@@ -231,8 +237,12 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
             <Input id="product-short-description" required value={values.shortDescription} onChange={(e) => set("shortDescription", e.target.value)} className="h-10" />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="product-description" className="mb-1.5 text-xs font-semibold text-ink-soft">Description</Label>
-            <Textarea id="product-description" required rows={4} value={values.description} onChange={(e) => set("description", e.target.value)} />
+            <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Description</Label>
+            <RichTextEditor
+              value={values.description}
+              onChange={(html) => set("description", html)}
+              placeholder="Premium football training ball..."
+            />
           </div>
         </div>
       </section>

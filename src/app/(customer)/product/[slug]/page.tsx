@@ -11,6 +11,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo/structured-data";
 import { formatPrice } from "@/lib/utils/format";
 import { getDiscountPercent } from "@/lib/data/products";
+import { sanitizeDescriptionHtml, descriptionToPlainText } from "@/lib/utils/sanitize-html";
 
 export async function generateStaticParams() {
   const slugs = await getAllProductSlugs();
@@ -25,7 +26,7 @@ export async function generateMetadata(props: PageProps<"/product/[slug]">): Pro
   const discount = getDiscountPercent(product);
   const description = `${product.shortInfo} — ${formatPrice(product.price)}${
     discount > 0 ? ` (${discount}% off ${formatPrice(product.mrp)})` : ""
-  }. ${product.description}`;
+  }. ${descriptionToPlainText(product.description)}`;
 
   return {
     title: product.name,
@@ -56,10 +57,14 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
   ]);
 
   const categoryLabel = product.category === "other-accessories" ? "Other Accessories" : product.subcategory;
+  // Defense-in-depth re-sanitization at render time — the description is
+  // already sanitized when the admin saves it (see admin-product-service.ts),
+  // this just guarantees the storefront never trusts a raw DB value.
+  const safeDescriptionHtml = sanitizeDescriptionHtml(product.description);
 
   return (
     <>
-      <JsonLd data={productJsonLd(product)} />
+      <JsonLd data={productJsonLd({ ...product, description: descriptionToPlainText(product.description) })} />
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
@@ -67,7 +72,11 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
           { name: product.name, path: `/product/${product.slug}` },
         ])}
       />
-      <ProductDetailClient product={product} related={related} reviews={reviews} />
+      <ProductDetailClient
+        product={{ ...product, description: safeDescriptionHtml }}
+        related={related}
+        reviews={reviews}
+      />
     </>
   );
 }
