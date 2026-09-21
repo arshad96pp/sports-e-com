@@ -25,7 +25,7 @@ export default async function AdminBannersPage() {
         {banners.map((b) => (
           <div key={b.id} className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-white p-4">
             <div className="flex gap-2">
-              <BannerImageUpload bannerId={b.id} field="imageUrlDesktop" label="Desktop (Primary)" currentUrl={b.imageUrlDesktop} />
+              <BannerImageUpload bannerId={b.id} field="imageUrlDesktop" label="Desktop" currentUrl={b.imageUrlDesktop} optional />
               <BannerImageUpload bannerId={b.id} field="imageUrlMobile" label="Mobile" currentUrl={b.imageUrlMobile} optional />
             </div>
             <div className="min-w-0 flex-1">

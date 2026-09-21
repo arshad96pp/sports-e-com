@@ -13,7 +13,6 @@ async function deleteBannerImageIfAny(url: string): Promise<void> {
   if (path) await deleteImage("banner-images", path);
 }
 
-/** Bust the `unstable_cache`-wrapped getActiveHeroBanners (hero-banner-service.ts) and its route cache. */
 function revalidateStorefront() {
   revalidatePath("/admin/banners");
   revalidatePath("/");
@@ -80,13 +79,10 @@ export async function uploadBannerImageAction(
   try {
     await adminBannerService.setBannerImage(bannerId, field, result.publicUrl);
   } catch (error) {
-    // Roll back the just-uploaded object — the DB never ended up pointing at it.
     await deleteBannerImageIfAny(result.publicUrl);
     return { ok: false, error: error instanceof Error ? error.message : "Could not save image." };
   }
 
-  // The old image at this slot (if any) is now orphaned — remove it so Storage
-  // doesn't accumulate a stale file per re-upload.
   const previousUrl = previousUrls ? previousUrls[field] : null;
   if (previousUrl) await deleteBannerImageIfAny(previousUrl);
 
@@ -94,19 +90,19 @@ export async function uploadBannerImageAction(
   return { ok: true, data: { url: result.publicUrl } };
 }
 
-/**
- * Clears the mobile image only — the desktop image is the required primary
- * image and can't be removed this way. The storefront falls back to the
- * desktop image when mobile is empty (see Hero.tsx).
- */
-export async function removeBannerMobileImageAction(bannerId: string): Promise<ActionResult> {
+
+export async function removeBannerImageAction(
+  bannerId: string,
+  field: "imageUrlDesktop" | "imageUrlMobile"
+): Promise<ActionResult> {
   const admin = await getSuperAdminOrNull();
   if (!admin) return { ok: false, error: "Unauthorized" };
 
   try {
     const previousUrls = await adminBannerService.getBannerImageUrls(bannerId);
-    await adminBannerService.setBannerImage(bannerId, "imageUrlMobile", "");
-    if (previousUrls?.imageUrlMobile) await deleteBannerImageIfAny(previousUrls.imageUrlMobile);
+    await adminBannerService.setBannerImage(bannerId, field, "");
+    const previousUrl = previousUrls ? previousUrls[field] : null;
+    if (previousUrl) await deleteBannerImageIfAny(previousUrl);
     revalidateStorefront();
     return { ok: true };
   } catch (error) {

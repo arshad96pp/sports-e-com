@@ -116,9 +116,9 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
                 <Input type="number" value={values.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} className="h-10" />
               </AdminFormField>
             </div>
-            <label className={`flex items-center gap-2 text-sm text-ink-soft ${banner ? "" : "opacity-50"}`}>
-              <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} disabled={!banner} />
-              {banner ? "Active" : "Active (upload a desktop image after creating, then edit to activate)"}
+            <label className="flex items-center gap-2 text-sm text-ink-soft">
+              <Switch checked={values.isActive} onCheckedChange={(v) => set("isActive", v)} />
+              Active
             </label>
           </AdminModalBody>
           <AdminModalFooter>

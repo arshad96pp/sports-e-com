@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { Upload, Loader2, X } from "lucide-react";
-import { uploadBannerImageAction, removeBannerMobileImageAction } from "@/lib/actions/admin/banner-actions";
+import { uploadBannerImageAction, removeBannerImageAction } from "@/lib/actions/admin/banner-actions";
 import { optimizeImageForUpload } from "@/lib/utils/client-image";
 
 export function BannerImageUpload({
@@ -17,7 +17,6 @@ export function BannerImageUpload({
   field: "imageUrlDesktop" | "imageUrlMobile";
   label: string;
   currentUrl: string;
-  /** Mobile falls back to the desktop image when empty — shows "(Optional)" and a remove control. */
   optional?: boolean;
 }) {
   const [url, setUrl] = useState(currentUrl);
@@ -48,7 +47,7 @@ export function BannerImageUpload({
   function handleRemove() {
     setError(null);
     startTransition(async () => {
-      const result = await removeBannerMobileImageAction(bannerId);
+      const result = await removeBannerImageAction(bannerId, field);
       if (!result.ok) {
         setError(result.error ?? "Could not remove image.");
         return;
@@ -61,7 +60,6 @@ export function BannerImageUpload({
     <div>
       <p className="mb-1.5 text-[11px] font-semibold text-muted">
         {label}
-        {optional && <span className="font-normal text-muted/70"> (Optional)</span>}
       </p>
       <div className="relative h-16 w-28 shrink-0">
         <button

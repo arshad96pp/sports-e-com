@@ -94,10 +94,7 @@ export function createSupabaseHeroBannerRepository(): HeroBannerRepository {
           cta_href: values.ctaHref,
           category_id: values.categoryId,
           sort_order: values.sortOrder,
-          // A brand-new banner never has images yet (uploaded separately right
-          // after creation) — activating it now would show a broken image on
-          // the homepage, so the submitted toggle is ignored here regardless.
-          is_active: false,
+          is_active: values.isActive,
           image_url_desktop: "",
           image_url_mobile: "",
         })
@@ -109,15 +106,6 @@ export function createSupabaseHeroBannerRepository(): HeroBannerRepository {
 
     async updateBanner(id: string, values: BannerFormValues): Promise<void> {
       const supabase = await createClient();
-
-      if (values.isActive) {
-        const current = await this.getBannerImageUrls(id);
-        // Mobile is optional — it falls back to the desktop image on the
-        // storefront (see Hero.tsx), so only the desktop image gates activation.
-        if (!current?.imageUrlDesktop) {
-          throw new Error("Upload a desktop image before activating this banner.");
-        }
-      }
 
       const { error } = await supabase
         .from("hero_banners")
