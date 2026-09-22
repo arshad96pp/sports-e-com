@@ -193,7 +193,7 @@ export function LoginPageClient() {
           <Button
             asChild
             variant="ghost"
-            className={`h-11 w-full rounded-full text-sm font-semibold ${isSubmitting ? "pointer-events-none opacity-50" : ""}`}
+            className={`h-11 w-full rounded-full text-sm font-semibold hover:!text-white ${isSubmitting ? "pointer-events-none opacity-50" : ""}`}
           >
             <Link
               href="/"

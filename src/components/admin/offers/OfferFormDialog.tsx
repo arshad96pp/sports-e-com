@@ -12,6 +12,7 @@ import {
 } from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -81,6 +82,10 @@ export function OfferFormDialog({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!Number.isFinite(values.discountPercent) || values.discountPercent < 0 || values.discountPercent > 100) {
+      setError("Discount must be between 0 and 100%.");
+      return;
+    }
     if (!selectedCategoryId) {
       setCategoryError("Select a category.");
       return;
@@ -154,15 +159,14 @@ export function OfferFormDialog({
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={`${formId}-discount`}>Discount</Label>
               <div className="flex items-center gap-2">
-                <Input
+                <NumberInput
                   id={`${formId}-discount`}
                   required
-                  type="number"
                   min={0}
                   max={100}
                   inputMode="numeric"
                   value={values.discountPercent}
-                  onChange={(e) => set("discountPercent", Number(e.target.value))}
+                  onValueChange={(discountPercent) => set("discountPercent", discountPercent)}
                   className="h-9 w-20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
                 <span className="text-sm text-muted">%</span>

@@ -337,9 +337,10 @@ export function BuyNowModal() {
 
         {body}
 
-        <DialogFooter className="flex-row gap-3 border-t border-border bg-white p-5 sm:justify-stretch">
+        <DialogFooter className="flex-row gap-3 border-t border-border bg-white pb-8 px-8 sm:justify-stretch">
           {footerButtons}
         </DialogFooter>
+        
       </DialogContent>
     </Dialog>
   );

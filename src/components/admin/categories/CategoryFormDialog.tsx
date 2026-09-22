@@ -13,12 +13,14 @@ import {
 } from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import type { AdminCategory } from "@/lib/services/admin-category-service";
 import type { CategoryFormValues } from "@/lib/services/admin-category-service";
 import { createCategoryAction, updateCategoryAction, uploadCategoryImageAction } from "@/lib/actions/admin/category-actions";
 import { optimizeImageForUpload } from "@/lib/utils/client-image";
+import { finiteOrZero } from "@/lib/utils/number-input";
 import { useToast } from "@/lib/context/ToastContext";
 
 function slugify(value: string) {
@@ -78,7 +80,8 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = category ? await updateCategoryAction(category.id, values) : await createCategoryAction(values);
+      const payload = { ...values, sortOrder: finiteOrZero(values.sortOrder) };
+      const result = category ? await updateCategoryAction(category.id, payload) : await createCategoryAction(payload);
       if (!result.ok) {
         const message = result.error ?? (category ? "Failed to update category" : "Failed to create category");
         setError(message);
@@ -152,7 +155,7 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
                 <Input value={values.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} className="h-10" />
               </AdminFormField>
               <AdminFormField label="Sort Order">
-                <Input type="number" value={values.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} className="h-10" />
+                <NumberInput value={values.sortOrder} onValueChange={(sortOrder) => set("sortOrder", sortOrder)} className="h-10" />
               </AdminFormField>
             </div>
             <AdminFormField label="SEO Description">

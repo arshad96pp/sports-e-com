@@ -9,7 +9,7 @@ export async function listOffersForAdmin(): Promise<AdminOffer[]> {
 }
 
 function assertValidOffer(values: OfferFormValues): void {
-  if (values.discountPercent < 0 || values.discountPercent > 100) {
+  if (!Number.isFinite(values.discountPercent) || values.discountPercent < 0 || values.discountPercent > 100) {
     throw new Error("Discount must be between 0 and 100%.");
   }
   if (new Date(values.startDate) >= new Date(values.endDate)) {

@@ -13,11 +13,13 @@ import {
 } from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { BannerFormValues } from "@/lib/services/admin-banner-service";
 import { createBannerAction, updateBannerAction } from "@/lib/actions/admin/banner-actions";
+import { finiteOrZero } from "@/lib/utils/number-input";
 import { useToast } from "@/lib/context/ToastContext";
 
 interface BannerLike extends BannerFormValues {
@@ -60,7 +62,8 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = banner ? await updateBannerAction(banner.id, values) : await createBannerAction(values);
+      const payload = { ...values, sortOrder: finiteOrZero(values.sortOrder) };
+      const result = banner ? await updateBannerAction(banner.id, payload) : await createBannerAction(payload);
       if (!result.ok) {
         const message = result.error ?? (banner ? "Failed to update banner" : "Failed to create banner");
         setError(message);
@@ -128,7 +131,7 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
                 </Select>
               </AdminFormField>
               <AdminFormField label="Sort Order">
-                <Input type="number" value={values.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} className="h-10" />
+                <NumberInput value={values.sortOrder} onValueChange={(sortOrder) => set("sortOrder", sortOrder)} className="h-10" />
               </AdminFormField>
             </div>
             <label className="flex items-center gap-2 text-sm text-ink-soft">

@@ -4,6 +4,7 @@ import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -113,33 +114,30 @@ function VariantEditor({
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <Label className="mb-1 text-[10px] font-medium text-muted-soft">Price (₹)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
                     step="0.01"
                     value={variant.price}
-                    onChange={(e) => updateSize(size, { price: Number(e.target.value) })}
+                    onValueChange={(price) => updateSize(size, { price })}
                     className="h-10"
                   />
                 </div>
                 <div>
                   <Label className="mb-1 text-[10px] font-medium text-muted-soft">MRP (₹)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
                     step="0.01"
                     value={variant.mrp}
-                    onChange={(e) => updateSize(size, { mrp: Number(e.target.value) })}
+                    onValueChange={(mrp) => updateSize(size, { mrp })}
                     className="h-10"
                   />
                 </div>
                 <div>
                   <Label className="mb-1 text-[10px] font-medium text-muted-soft">Stock</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min={0}
                     value={variant.stock}
-                    onChange={(e) => updateSize(size, { stock: Number(e.target.value) })}
+                    onValueChange={(stock) => updateSize(size, { stock })}
                     className="h-10"
                   />
                 </div>
@@ -277,9 +275,15 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
     e.preventDefault();
     setError(null);
 
-    if (!hasSizeVariants && values.price > values.mrp) {
-      setError("Price cannot be higher than MRP.");
-      return;
+    if (!hasSizeVariants) {
+      if (!Number.isFinite(values.price) || !Number.isFinite(values.mrp) || !Number.isFinite(values.stock)) {
+        setError("Please enter price, MRP and stock.");
+        return;
+      }
+      if (values.price > values.mrp) {
+        setError("Price cannot be higher than MRP.");
+        return;
+      }
     }
 
     if (values.description.replace(/<[^>]*>/g, "").trim().length === 0) {
@@ -449,45 +453,42 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <Label htmlFor="product-price" className="mb-1.5 text-xs font-semibold text-ink-soft">Price (₹)</Label>
-            <Input
+            <NumberInput
               id="product-price"
               required={!hasSizeVariants}
               disabled={hasSizeVariants}
               readOnly={hasSizeVariants}
-              type="number"
               min={0}
               step="0.01"
               value={displayPrice}
-              onChange={(e) => set("price", Number(e.target.value))}
+              onValueChange={(price) => set("price", price)}
               className="h-10 disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-70"
             />
           </div>
           <div>
             <Label htmlFor="product-mrp" className="mb-1.5 text-xs font-semibold text-ink-soft">MRP (₹)</Label>
-            <Input
+            <NumberInput
               id="product-mrp"
               required={!hasSizeVariants}
               disabled={hasSizeVariants}
               readOnly={hasSizeVariants}
-              type="number"
               min={0}
               step="0.01"
               value={displayMrp}
-              onChange={(e) => set("mrp", Number(e.target.value))}
+              onValueChange={(mrp) => set("mrp", mrp)}
               className="h-10 disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-70"
             />
           </div>
           <div>
             <Label htmlFor="product-stock" className="mb-1.5 text-xs font-semibold text-ink-soft">Stock</Label>
-            <Input
+            <NumberInput
               id="product-stock"
               required={!hasSizeVariants}
               disabled={hasSizeVariants}
               readOnly={hasSizeVariants}
-              type="number"
               min={0}
               value={displayStock}
-              onChange={(e) => set("stock", Number(e.target.value))}
+              onValueChange={(stock) => set("stock", stock)}
               className="h-10 disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-70"
             />
           </div>

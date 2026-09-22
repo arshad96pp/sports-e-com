@@ -20,6 +20,11 @@ export async function getProductForAdmin(id: string): Promise<AdminProductDetail
 }
 
 function assertValidPricing(values: ProductFormValues): void {
+  if (values.variants.length === 0) {
+    if (!Number.isFinite(values.price) || !Number.isFinite(values.mrp) || !Number.isFinite(values.stock)) {
+      throw new Error("Please enter price, MRP and stock.");
+    }
+  }
   if (values.price > values.mrp) {
     throw new Error("Price cannot be higher than MRP.");
   }
