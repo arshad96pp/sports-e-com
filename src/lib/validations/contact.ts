@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeIndianPhone } from "@/lib/utils/phone";
 
 // Coerces a missing/non-string field to "" so it fails our own min-length
 // message below instead of zod's raw "expected string, received undefined".
@@ -11,9 +12,13 @@ const requiredText = () =>
 export const contactFormSchema = z.object({
   name: requiredText().pipe(z.string().min(2, "Enter your full name").max(120, "Full name is too long")),
   email: requiredText().pipe(z.string().toLowerCase().max(254).email("Enter a valid email")),
-  subject: requiredText().pipe(
-    z.string().min(2, "Enter a topic or subject").max(160, "Subject is too long")
-  ),
+  // The form only collects the 10-digit local number (the +91 prefix is
+  // fixed in the UI, not user-editable) but normalizeIndianPhone also
+  // tolerates an accidentally-included +91/91 prefix so it never produces a
+  // doubled-up "+91+91…" value.
+  phone: requiredText()
+    .transform((v) => normalizeIndianPhone(v))
+    .pipe(z.string({ error: "Enter a valid 10-digit mobile number" })),
   message: requiredText().pipe(
     z.string().min(10, "Tell us a bit more about your inquiry").max(4000, "Message is too long")
   ),

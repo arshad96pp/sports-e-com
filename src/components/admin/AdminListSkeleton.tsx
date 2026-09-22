@@ -173,6 +173,45 @@ export function OrderListSkeleton({ rows = 8 }: { rows?: number }) {
   );
 }
 
+/** Mirrors AdminContactMessagesPage's table (name/email, phone, date, actions). */
+export function ContactMessageListSkeleton({ rows = 8 }: { rows?: number }) {
+  return (
+    <Shell
+      selects={0}
+      head={
+        <>
+          <TableHead>Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Phone</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </>
+      }
+      rows={Array.from({ length: rows }).map((_, i) => (
+        <Row key={i}>
+          <TableCell>
+            <Bone className="h-3.5 w-28" />
+          </TableCell>
+          <TableCell>
+            <Bone className="h-3.5 w-36" />
+          </TableCell>
+          <TableCell>
+            <Bone className="h-3.5 w-28" />
+          </TableCell>
+          <TableCell>
+            <Bone className="h-3.5 w-20" />
+          </TableCell>
+          <TableCell className="text-right">
+            <div className="flex items-center justify-end">
+              <Bone className="h-7 w-7 rounded-lg" />
+            </div>
+          </TableCell>
+        </Row>
+      ))}
+    />
+  );
+}
+
 /** Mirrors AdminCustomersPage's table (name/email, phone, joined date, active toggle). */
 export function CustomerListSkeleton({ rows = 8 }: { rows?: number }) {
   return (

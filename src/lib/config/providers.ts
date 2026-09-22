@@ -13,6 +13,7 @@ import { createSupabaseAddressRepository } from "@/lib/providers/supabase/addres
 import { createSupabaseOrderRepository } from "@/lib/providers/supabase/order.repository";
 import { createSupabaseStatsRepository } from "@/lib/providers/supabase/stats.repository";
 import { createSupabaseStoragePort } from "@/lib/providers/supabase/storage.provider";
+import { createSupabaseContactMessageRepository } from "@/lib/providers/supabase/contact-message.repository";
 import type { AuthSessionPort } from "@/lib/core/ports/auth.port";
 import type { ProductRepository } from "@/lib/core/ports/product.repository";
 import type { CategoryRepository } from "@/lib/core/ports/category.repository";
@@ -27,6 +28,7 @@ import type { AddressRepository } from "@/lib/core/ports/address.repository";
 import type { OrderRepository } from "@/lib/core/ports/order.repository";
 import type { StatsRepository } from "@/lib/core/ports/stats.repository";
 import type { StoragePort } from "@/lib/core/ports/storage.port";
+import type { ContactMessageRepository } from "@/lib/core/ports/contact-message.repository";
 
 /**
  * The single place server-side provider selection happens. Every service
@@ -151,5 +153,13 @@ export function getStoragePort(): StoragePort {
     case "supabase":
     default:
       return createSupabaseStoragePort();
+  }
+}
+
+export function getContactMessageRepository(): ContactMessageRepository {
+  switch (DATABASE_PROVIDER) {
+    case "supabase":
+    default:
+      return createSupabaseContactMessageRepository();
   }
 }

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/lib/context/ToastContext";
+import { normalizeIndianPhone } from "@/lib/utils/phone";
 
 const GENERIC_ERROR = "Something went wrong while sending your message. Please try again.";
 
@@ -18,12 +19,12 @@ const labelClass = "mb-2 text-[10px] font-medium uppercase tracking-[0.18em] tex
 interface FormState {
   name: string;
   email: string;
-  subject: string;
+  phone: string;
   message: string;
   hp_topic: string;
 }
 
-const initialState: FormState = { name: "", email: "", subject: "", message: "", hp_topic: "" };
+const initialState: FormState = { name: "", email: "", phone: "", message: "", hp_topic: "" };
 
 export function ContactForm() {
   const { showToast } = useToast();
@@ -40,8 +41,7 @@ export function ContactForm() {
     if (form.name.trim().length > 120) return "Full name is too long";
     if (!form.email.trim()) return "Enter your email address";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return "Enter a valid email address";
-    if (!form.subject.trim()) return "Enter a topic or subject";
-    if (form.subject.trim().length > 160) return "Subject is too long";
+    if (!normalizeIndianPhone(form.phone)) return "Enter a valid 10-digit mobile number";
     if (!form.message.trim()) return "Enter your inquiry details";
     if (form.message.trim().length < 10) return "Tell us a bit more about your inquiry";
     if (form.message.trim().length > 4000) return "Message is too long";
@@ -68,7 +68,7 @@ export function ContactForm() {
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
-          subject: form.subject.trim(),
+          phone: form.phone.trim(),
           message: form.message.trim(),
           hp_topic: form.hp_topic,
         }),
@@ -125,33 +125,40 @@ export function ContactForm() {
               />
             </div>
             <div>
-              <Label htmlFor="contact-email" className={labelClass}>
-                Email address
+              <Label htmlFor="contact-phone" className={labelClass}>
+                Phone number
               </Label>
-              <Input
-                id="contact-email"
-                type="email"
-                value={form.email}
-                onChange={(e) => update("email", e.target.value)}
-                placeholder="you@email.com"
-                maxLength={254}
-                required
-                className={fieldClass}
-              />
+              <div className="flex h-10 items-center gap-2 border-b border-border focus-within:border-ink">
+                <span className="text-sm text-ink-soft">+91</span>
+                <Input
+                  id="contact-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  value={form.phone}
+                  onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="9876543210"
+                  maxLength={10}
+                  required
+                  className="h-10 rounded-none border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                />
+              </div>
             </div>
           </div>
 
           <div className="mt-10">
-            <Label htmlFor="contact-subject" className={labelClass}>
-              Topic / subject
+
+
+            <Label htmlFor="contact-email" className={labelClass}>
+              Email address
             </Label>
             <Input
-              id="contact-subject"
-              type="text"
-              value={form.subject}
-              onChange={(e) => update("subject", e.target.value)}
-              placeholder="How can we assist you?"
-              maxLength={160}
+              id="contact-email"
+              type="email"
+              value={form.email}
+              onChange={(e) => update("email", e.target.value)}
+              placeholder="you@email.com"
+              maxLength={254}
               required
               className={fieldClass}
             />

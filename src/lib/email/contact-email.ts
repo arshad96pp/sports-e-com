@@ -92,17 +92,17 @@ ${STORE.name}`;
 export function renderContactNotificationEmail({
   name,
   email,
-  subject,
+  phone,
   message,
 }: {
   name: string;
   email: string;
-  subject: string;
+  phone: string;
   message: string;
 }) {
   const safeName = escapeHtml(name);
   const safeEmail = escapeHtml(email);
-  const safeSubject = escapeHtml(subject);
+  const safePhone = escapeHtml(phone);
   const safeMessage = escapeHtml(message).replace(/\n/g, "<br />");
 
   const html = `<!DOCTYPE html>
@@ -141,8 +141,8 @@ export function renderContactNotificationEmail({
                   </tr>
                   <tr>
                     <td style="padding:0 0 16px 0;">
-                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Subject</div>
-                      <div style="font-size:15px;color:#1a1a1a;margin-top:4px;">${safeSubject}</div>
+                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Phone</div>
+                      <div style="font-size:15px;color:#1a1a1a;margin-top:4px;">${safePhone}</div>
                     </td>
                   </tr>
                   <tr>
@@ -165,7 +165,7 @@ export function renderContactNotificationEmail({
 
 Name: ${name}
 Email: ${email}
-Subject: ${subject}
+Phone: ${phone}
 
 Message:
 ${message}`;

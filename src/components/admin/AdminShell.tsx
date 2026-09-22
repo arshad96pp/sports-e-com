@@ -12,6 +12,7 @@ import {
   Tag,
   GalleryHorizontal,
   ClipboardList,
+  Mail,
   Settings,
   LogOut,
   Menu,
@@ -30,12 +31,19 @@ const NAV = [
   { href: "/admin/subcategories", label: "Subcategories", icon: FolderTree },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
+  { href: "/admin/contact-messages", label: "Messages", icon: Mail },
   { href: "/admin/offers", label: "Offers", icon: Tag },
   { href: "/admin/banners", label: "Banners", icon: GalleryHorizontal },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AdminShell({ adminName, children }: { adminName: string; children: React.ReactNode }) {
+export function AdminShell({
+  adminName,
+  children,
+}: {
+  adminName: string;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);

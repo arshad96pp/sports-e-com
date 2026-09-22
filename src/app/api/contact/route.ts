@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { contactFormSchema } from "@/lib/validations/contact";
 import { renderContactConfirmationEmail, renderContactNotificationEmail } from "@/lib/email/contact-email";
 import { sendMail } from "@/lib/email/smtp";
+import { createContactMessage } from "@/lib/services/contact-message-service";
 
 const GENERIC_ERROR = "Something went wrong while sending your message. Please try again.";
 const DUPLICATE_ERROR = "You've already submitted this recently. We'll be in touch shortly.";
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const { name, email, subject, message } = parsed.data;
+  const { name, email, phone, message } = parsed.data;
 
   if (isDuplicate(email)) {
     return NextResponse.json({ ok: false, error: DUPLICATE_ERROR }, { status: 429 });
@@ -58,7 +59,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: GENERIC_ERROR }, { status: 500 });
   }
 
-  const notification = renderContactNotificationEmail({ name, email, subject, message });
+  // Best-effort persistence for the admin panel — the email notification below
+  // is the existing, already-working critical path and must keep working even
+  // if this insert fails (e.g. DB hiccup), so failures here are only logged.
+  try {
+    await createContactMessage({ fullName: name, email, phone, message });
+  } catch (err) {
+    console.error("Failed to save contact message:", err instanceof Error ? err.message : err);
+  }
+
+  const notification = renderContactNotificationEmail({ name, email, phone, message });
 
   try {
     await sendMail({
