@@ -131,7 +131,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
       )}
 
       {reviewList.length > 0 && (
-        <div className={`flex flex-col divide-y divide-border border-t border-border ${canAddReview ? "mt-8" : "mt-6"}`}>
+        <div className={`flex flex-col divide-y divide-border `}>
           {reviewList.map((review) => {
             const isOwn = ownReviewId === review.id;
             return (
