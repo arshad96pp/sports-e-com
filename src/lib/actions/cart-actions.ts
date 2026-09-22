@@ -2,6 +2,7 @@
 
 import { getCurrentCustomerId } from "@/lib/auth/session";
 import * as cartService from "@/lib/services/cart-service";
+import { toGuestCartPayload } from "@/lib/utils/cart-merge";
 
 export interface CartItemDTO {
   productId: string;
@@ -67,9 +68,13 @@ export async function clearCartAction(): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
-export async function mergeCartAction(items: CartItemDTO[]): Promise<{ ok: boolean }> {
+export async function mergeCartAction(items: CartItemDTO[]): Promise<{ ok: boolean; error?: string }> {
   const userId = await getCurrentCustomerId();
-  if (!userId) return { ok: false };
-  await cartService.mergeCartItems(userId, items);
-  return { ok: true };
+  if (!userId) return { ok: false, error: "Not signed in." };
+  try {
+    await cartService.mergeCartItems(userId, toGuestCartPayload(items));
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not merge cart." };
+  }
 }

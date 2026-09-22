@@ -49,7 +49,5 @@ export async function mergeCartItems(
   userId: string,
   items: { productId: string; variantId: string | null; quantity: number; size: string | null; color: string | null }[]
 ): Promise<void> {
-  for (const item of items) {
-    await addCartItem(userId, item.productId, item.variantId, item.quantity, item.size, item.color);
-  }
+  return getCartRepository().mergeCartItems(userId, items);
 }

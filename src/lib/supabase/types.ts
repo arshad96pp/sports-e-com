@@ -958,6 +958,7 @@ export type Database = {
       }
       generate_order_number: { Args: never; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
+      merge_guest_cart: { Args: { p_items: Json }; Returns: undefined }
       refresh_product_rating: {
         Args: { p_product_id: string }
         Returns: undefined

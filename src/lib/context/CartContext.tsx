@@ -24,6 +24,12 @@ import {
 
 const STORAGE_KEY = "stryde.cart";
 
+/**
+ * Module-level gate so React Strict Mode remounts (which reset useRef) and
+ * overlapping login effects cannot run two merges at once and double quantities.
+ */
+let mergeInFlight: Promise<boolean> | null = null;
+
 export function cartKey(productId: string, variantId: string | null, size: string | null, color: string | null) {
   return `${productId}::${variantId ?? "-"}::${size ?? "-"}::${color ?? "-"}`;
 }
@@ -53,7 +59,8 @@ const CartContext = createContext<CartContextValue | null>(null);
 /**
  * Guests: cart lives entirely in localStorage.
  * Signed-in users: cart is persisted server-side (Postgres via server actions).
- * On login, any guest cart is merged into the account's DB cart exactly once.
+ * On login, any guest cart is merged into the account's DB cart exactly once,
+ * and localStorage is cleared only after that write is confirmed.
  */
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { status } = useSupabaseSession();
@@ -61,12 +68,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const mergedRef = useRef(false);
+  const opChainRef = useRef(Promise.resolve());
   const { showToast } = useToast();
+
+  const runExclusive = useCallback((op: () => Promise<void>) => {
+    const next = opChainRef.current.then(op, op);
+    opChainRef.current = next.then(
+      () => undefined,
+      () => undefined
+    );
+    return next;
+  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
 
     if (!isAuthed) {
+      mergedRef.current = false;
+      mergeInFlight = null;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems(readStorage(STORAGE_KEY, []));
       setHydrated(true);
@@ -74,30 +93,53 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
-    (async () => {
+    void runExclusive(async () => {
+      if (cancelled) return;
       try {
         if (!mergedRef.current) {
-          mergedRef.current = true;
           const guestItems = readStorage<CartItem[]>(STORAGE_KEY, []);
           if (guestItems.length > 0) {
-            await mergeCartAction(guestItems);
-            writeStorage(STORAGE_KEY, []);
+            if (!mergeInFlight) {
+              mergeInFlight = (async () => {
+                let result: { ok: boolean; error?: string };
+                try {
+                  result = await mergeCartAction(guestItems);
+                } catch (error) {
+                  console.error("Cart merge failed", error);
+                  result = { ok: false, error: "Could not merge cart." };
+                }
+                if (!result.ok) {
+                  console.error("Cart merge failed", result.error);
+                  return false;
+                }
+                // Confirm DB success BEFORE touching localStorage.
+                writeStorage(STORAGE_KEY, []);
+                return true;
+              })();
+            }
+            const merged = await mergeInFlight;
+            if (!merged) {
+              mergeInFlight = null;
+              if (!cancelled) {
+                showToast("Couldn't save your cart. Your items are still on this device — please refresh to try again.", "error");
+              }
+              return;
+            }
           }
+          mergedRef.current = true;
         }
         const dbItems = await getCartAction();
         if (!cancelled) setItems(dbItems);
       } catch {
         if (!cancelled) showToast("Couldn't load your cart. Please refresh.", "error");
       } finally {
-        // Always settles `hydrated`, even on failure, so the cart page never
-        // gets stuck on its skeleton forever.
         if (!cancelled) setHydrated(true);
       }
-    })();
+    });
     return () => {
       cancelled = true;
     };
-  }, [status, isAuthed, showToast]);
+  }, [status, isAuthed, showToast, runExclusive]);
 
   useEffect(() => {
     if (hydrated && !isAuthed) writeStorage(STORAGE_KEY, items);
@@ -110,69 +152,102 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const size = opts?.size ?? null;
       const color = opts?.color ?? null;
 
-      setItems((prev) => {
-        const key = cartKey(productId, variantId, size, color);
-        const existing = prev.find((i) => cartKey(i.productId, i.variantId, i.size, i.color) === key);
-        if (existing) {
-          return prev.map((i) =>
-            cartKey(i.productId, i.variantId, i.size, i.color) === key
-              ? { ...i, quantity: i.quantity + quantity }
-              : i
-          );
-        }
-        return [...prev, { productId, variantId, quantity, size, color }];
-      });
+      const applyLocal = () => {
+        setItems((prev) => {
+          const key = cartKey(productId, variantId, size, color);
+          const existing = prev.find((i) => cartKey(i.productId, i.variantId, i.size, i.color) === key);
+          if (existing) {
+            return prev.map((i) =>
+              cartKey(i.productId, i.variantId, i.size, i.color) === key
+                ? { ...i, quantity: i.quantity + quantity }
+                : i
+            );
+          }
+          return [...prev, { productId, variantId, quantity, size, color }];
+        });
+      };
 
-      if (isAuthed) {
-        addCartItemAction(productId, variantId, quantity, size, color)
-          .then((result) => {
-            if (!result.ok) showToast(result.error ?? "Couldn't sync your cart. Please refresh and try again.", "error");
-          })
-          .catch(() => {
-            showToast("Couldn't sync your cart. Please refresh and try again.", "error");
-          });
+      if (!isAuthed) {
+        applyLocal();
+        showToast(`${opts?.productName ?? "Item"} added to cart`, "cart");
+        return;
       }
+
       showToast(`${opts?.productName ?? "Item"} added to cart`, "cart");
+      void runExclusive(async () => {
+        applyLocal();
+        try {
+          const result = await addCartItemAction(productId, variantId, quantity, size, color);
+          if (!result.ok) showToast(result.error ?? "Couldn't sync your cart. Please refresh and try again.", "error");
+        } catch {
+          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
+        }
+      });
     },
-    [isAuthed, showToast]
+    [isAuthed, showToast, runExclusive]
   );
 
   const removeItem = useCallback<CartContextValue["removeItem"]>(
     (productId, variantId, size, color) => {
       const key = cartKey(productId, variantId, size, color);
-      setItems((prev) => prev.filter((i) => cartKey(i.productId, i.variantId, i.size, i.color) !== key));
-      if (isAuthed) {
-        removeCartItemAction(productId, variantId, size, color).catch(() => {
-          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
-        });
+      const applyLocal = () => setItems((prev) => prev.filter((i) => cartKey(i.productId, i.variantId, i.size, i.color) !== key));
+
+      if (!isAuthed) {
+        applyLocal();
+        return;
       }
+
+      void runExclusive(async () => {
+        applyLocal();
+        try {
+          await removeCartItemAction(productId, variantId, size, color);
+        } catch {
+          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
+        }
+      });
     },
-    [isAuthed, showToast]
+    [isAuthed, showToast, runExclusive]
   );
 
   const updateQuantity = useCallback<CartContextValue["updateQuantity"]>(
     (productId, variantId, size, color, quantity) => {
       const key = cartKey(productId, variantId, size, color);
-      setItems((prev) =>
-        quantity <= 0
-          ? prev.filter((i) => cartKey(i.productId, i.variantId, i.size, i.color) !== key)
-          : prev.map((i) =>
-              cartKey(i.productId, i.variantId, i.size, i.color) === key ? { ...i, quantity } : i
-            )
-      );
-      if (isAuthed) {
-        setCartItemQuantityAction(productId, variantId, size, color, quantity).catch(() => {
-          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
-        });
+      const applyLocal = () =>
+        setItems((prev) =>
+          quantity <= 0
+            ? prev.filter((i) => cartKey(i.productId, i.variantId, i.size, i.color) !== key)
+            : prev.map((i) =>
+                cartKey(i.productId, i.variantId, i.size, i.color) === key ? { ...i, quantity } : i
+              )
+        );
+
+      if (!isAuthed) {
+        applyLocal();
+        return;
       }
+
+      void runExclusive(async () => {
+        applyLocal();
+        try {
+          await setCartItemQuantityAction(productId, variantId, size, color, quantity);
+        } catch {
+          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
+        }
+      });
     },
-    [isAuthed, showToast]
+    [isAuthed, showToast, runExclusive]
   );
 
   const clear = useCallback(async () => {
-    setItems([]);
-    if (isAuthed) await clearCartAction();
-  }, [isAuthed]);
+    if (!isAuthed) {
+      setItems([]);
+      return;
+    }
+    await runExclusive(async () => {
+      setItems([]);
+      await clearCartAction();
+    });
+  }, [isAuthed, runExclusive]);
 
   const count = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
 
