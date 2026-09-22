@@ -76,10 +76,6 @@ export function RegisterPageClient() {
       }
 
       showToast(`Account created. Welcome, ${parsed.data.fullName.split(" ")[0]}!`, "success");
-      // Intentionally left submitting/disabled — see LoginPageClient for why
-      // the form must not re-enable itself between success and navigation.
-      // The next render swaps this component's output to <AccountSkeleton />
-      // (see `isNavigating` below) instead of the form.
       replace("/account");
     } catch {
       setError("Network error. Please check your connection and try again.");
@@ -87,9 +83,7 @@ export function RegisterPageClient() {
       setIsSubmitting(false);
     }
   }
-
-  // See LoginPageClient: swap straight to the destination's own skeleton the
-  // instant navigation starts, rather than a generic loading message.
+  
   if (isNavigating) {
     return <AccountSkeleton />;
   }

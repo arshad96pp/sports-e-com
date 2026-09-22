@@ -1,4 +1,4 @@
-import { STORE } from "@/lib/config";
+import { SITE_URL, STORE } from "@/lib/config";
 
 function escapeHtml(value: string) {
   return value
@@ -9,60 +9,55 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
-/**
- * Renders the "thank you for contacting us" confirmation email sent to the
- * customer who submitted the contact form. Kept to table-based layout and
- * inline styles since that's what renders consistently across email clients.
- */
-export function renderContactConfirmationEmail({ name }: { name: string }) {
-  const safeName = escapeHtml(name);
+function firstName(fullName: string) {
+  return fullName.trim().split(/\s+/)[0] || fullName;
+}
+
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+
+function emailDocument(title: string, inner: string) {
   const safeStoreName = escapeHtml(STORE.name);
   const safeTagline = escapeHtml(STORE.tagline);
+  const safeSupport = escapeHtml(STORE.supportEmail);
 
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${safeStoreName}</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>${escapeHtml(title)}</title>
+    <style type="text/css">
+      body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+      table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+      table { border-collapse: collapse !important; }
+      @media only screen and (max-width: 620px) {
+        .email-outer { padding: 16px !important; }
+        .email-card { width: 100% !important; }
+        .px { padding-left: 24px !important; padding-right: 24px !important; }
+        .hero-title { font-size: 26px !important; }
+        .cta { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
+      }
+    </style>
   </head>
-  <body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Georgia,'Times New Roman',serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4;padding:32px 16px;">
+  <body style="margin:0;padding:0;background-color:#F6F6F4;font-family:${FONT};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F6F6F4" style="background-color:#F6F6F4;">
       <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;">
+        <td class="email-outer" align="center" style="padding:32px 16px;">
+          <table class="email-card" role="presentation" width="560" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF" style="width:100%;max-width:560px;background-color:#FFFFFF;border-radius:12px;overflow:hidden;">
             <tr>
-              <td style="padding:40px 40px 24px 40px;text-align:center;border-bottom:1px solid #e5e5e5;">
-                <div style="font-size:20px;letter-spacing:4px;font-weight:700;color:#0a0a0a;text-transform:uppercase;">
-                  ${safeStoreName}
-                </div>
-                <div style="margin-top:6px;font-size:11px;letter-spacing:3px;color:#b8964f;text-transform:uppercase;">
-                  ${safeTagline}
-                </div>
+              <td class="px" style="padding:22px 36px;border-bottom:1px solid #E3E3DF;">
+                <span style="color:#0A0A0A;font-size:16px;font-weight:800;letter-spacing:-0.02em;">${safeStoreName}</span>
               </td>
             </tr>
+            ${inner}
             <tr>
-              <td style="padding:40px;">
-                <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#1a1a1a;">
-                  Hi ${safeName},
+              <td bgcolor="#0A0A0A" class="px" style="background-color:#0A0A0A;padding:24px 36px;">
+                <p style="margin:0 0 6px;color:rgba(255,255,255,0.55);font-size:12px;line-height:1.5;">Need a hand?</p>
+                <p style="margin:0 0 16px;">
+                  <a href="mailto:${safeSupport}" style="color:#FFFFFF;font-size:12px;font-weight:600;text-decoration:none;">${safeSupport}</a>
                 </p>
-                <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#1a1a1a;">
-                  Thank you for contacting us.
-                </p>
-                <p style="margin:0 0 20px 0;font-size:15px;line-height:1.7;color:#1a1a1a;">
-                  We have received your request successfully. Our team will review your message and get back to you by email shortly.
-                </p>
-                <p style="margin:28px 0 0 0;font-size:15px;line-height:1.7;color:#1a1a1a;">
-                  Regards,<br />
-                  ${safeStoreName}
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:24px 40px;text-align:center;background-color:#fafafa;">
-                <div style="font-size:10px;letter-spacing:2px;color:#999999;text-transform:uppercase;">
-                  ${safeStoreName}
-                </div>
+                <p style="margin:0;color:rgba(255,255,255,0.45);font-size:12px;line-height:1.5;">${safeStoreName} &middot; ${safeTagline}</p>
               </td>
             </tr>
           </table>
@@ -71,15 +66,56 @@ export function renderContactConfirmationEmail({ name }: { name: string }) {
     </table>
   </body>
 </html>`;
+}
 
-  const text = `Hi ${name},
+/**
+ * Renders the "thank you for contacting us" confirmation email sent to the
+ * customer who submitted the contact form. Kept to table-based layout and
+ * inline styles since that's what renders consistently across email clients.
+ */
+export function renderContactConfirmationEmail({ name }: { name: string }) {
+  const safeName = escapeHtml(firstName(name));
+  const shopUrl = escapeHtml(SITE_URL.replace(/\/$/, ""));
 
-Thank you for contacting us.
+  const inner = `
+            <tr>
+              <td class="px" style="padding:40px 36px 8px;">
+                <p style="margin:0 0 12px;color:#6F6F6B;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">
+                  Message received
+                </p>
+                <h1 class="hero-title" style="margin:0 0 14px;color:#0A0A0A;font-size:30px;font-weight:800;letter-spacing:-0.03em;line-height:1.15;">
+                  Hey, ${safeName}.
+                </h1>
+                <p style="margin:0;color:#6F6F6B;font-size:15px;line-height:1.7;">
+                  Thanks for writing in. We&rsquo;ve got your message and will get back to you shortly.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td class="px" style="padding:28px 36px 40px;">
+                <a
+                  class="cta"
+                  href="${shopUrl}"
+                  style="display:inline-block;background-color:#0A0A0A;color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:999px;"
+                >
+                  Shop the collection
+                </a>
+              </td>
+            </tr>`;
 
-We have received your request successfully. Our team will review your message and get back to you by email shortly.
+  const html = emailDocument("Thanks for getting in touch", inner);
 
-Regards,
-${STORE.name}`;
+  const text = `Hey, ${firstName(name)}.
+
+Thanks for writing in. We've got your message and will get back to you shortly.
+
+Shop the collection
+${SITE_URL.replace(/\/$/, "")}
+
+Need a hand?
+${STORE.supportEmail}
+
+${STORE.name} · ${STORE.tagline}`;
 
   return { html, text };
 }
@@ -105,70 +141,67 @@ export function renderContactNotificationEmail({
   const safePhone = escapeHtml(phone);
   const safeMessage = escapeHtml(message).replace(/\n/g, "<br />");
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>New Contact Us Inquiry</title>
-  </head>
-  <body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Georgia,'Times New Roman',serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4;padding:32px 16px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;">
+  const inner = `
             <tr>
-              <td style="padding:32px 40px;text-align:center;border-bottom:1px solid #e5e5e5;">
-                <div style="font-size:18px;letter-spacing:4px;font-weight:700;color:#0a0a0a;text-transform:uppercase;">
-                  New Contact Us Inquiry
-                </div>
+              <td class="px" style="padding:40px 36px 8px;">
+                <p style="margin:0 0 12px;color:#6F6F6B;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">
+                  New inquiry
+                </p>
+                <h1 class="hero-title" style="margin:0 0 14px;color:#0A0A0A;font-size:30px;font-weight:800;letter-spacing:-0.03em;line-height:1.15;">
+                  New message
+                </h1>
+                <p style="margin:0;color:#6F6F6B;font-size:15px;line-height:1.7;">
+                  Someone wrote in from the contact form. Reply to this email to reach them.
+                </p>
               </td>
             </tr>
             <tr>
-              <td style="padding:32px 40px;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <td class="px" style="padding:28px 36px 40px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #E3E3DF;">
                   <tr>
-                    <td style="padding:0 0 16px 0;">
-                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Name</div>
-                      <div style="font-size:15px;color:#1a1a1a;margin-top:4px;">${safeName}</div>
+                    <td style="padding:20px 0;border-bottom:1px solid #E3E3DF;">
+                      <p style="margin:0 0 4px;color:#0A0A0A;font-size:14px;font-weight:700;">Name</p>
+                      <p style="margin:0;color:#6F6F6B;font-size:14px;line-height:1.55;">${safeName}</p>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding:0 0 16px 0;">
-                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Email</div>
-                      <div style="font-size:15px;color:#1a1a1a;margin-top:4px;">${safeEmail}</div>
+                    <td style="padding:20px 0;border-bottom:1px solid #E3E3DF;">
+                      <p style="margin:0 0 4px;color:#0A0A0A;font-size:14px;font-weight:700;">Email</p>
+                      <p style="margin:0;font-size:14px;line-height:1.55;">
+                        <a href="mailto:${safeEmail}" style="color:#0A0A0A;text-decoration:none;">${safeEmail}</a>
+                      </p>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding:0 0 16px 0;">
-                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Phone</div>
-                      <div style="font-size:15px;color:#1a1a1a;margin-top:4px;">${safePhone}</div>
+                    <td style="padding:20px 0;border-bottom:1px solid #E3E3DF;">
+                      <p style="margin:0 0 4px;color:#0A0A0A;font-size:14px;font-weight:700;">Phone</p>
+                      <p style="margin:0;font-size:14px;line-height:1.55;">
+                        <a href="tel:${safePhone.replace(/\s/g, "")}" style="color:#0A0A0A;text-decoration:none;">${safePhone}</a>
+                      </p>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding:16px 0 0 0;border-top:1px solid #e5e5e5;">
-                      <div style="font-size:10px;letter-spacing:2px;color:#b8964f;text-transform:uppercase;">Message</div>
-                      <div style="font-size:14px;line-height:1.7;color:#333333;margin-top:8px;">${safeMessage}</div>
+                    <td style="padding:20px 0 4px;">
+                      <p style="margin:0 0 4px;color:#0A0A0A;font-size:14px;font-weight:700;">Message</p>
+                      <p style="margin:0;color:#6F6F6B;font-size:14px;line-height:1.7;">${safeMessage}</p>
                     </td>
                   </tr>
                 </table>
               </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+            </tr>`;
 
-  const text = `New Contact Us Inquiry
+  const html = emailDocument("New Contact Us Inquiry", inner);
+
+  const text = `New inquiry
 
 Name: ${name}
 Email: ${email}
 Phone: ${phone}
 
 Message:
-${message}`;
+${message}
+
+${STORE.name} · ${STORE.tagline}`;
 
   return { html, text };
 }

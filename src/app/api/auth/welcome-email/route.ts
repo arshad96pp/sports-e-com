@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   try {
     await sendMail({
       to: email,
-      subject: `Welcome to our store, ${fullName.split(" ")[0]}!`,
+      subject: welcome.subject,
       html: welcome.html,
       text: welcome.text,
     });
