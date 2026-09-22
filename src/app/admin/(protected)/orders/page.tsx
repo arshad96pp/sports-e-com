@@ -25,7 +25,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   const sort = typeof sp.sort === "string" && (VALID_SORTS as string[]).includes(sp.sort) ? (sp.sort as AdminOrderSort) : undefined;
   const page = typeof sp.page === "string" ? Math.max(1, parseInt(sp.page, 10) || 1) : 1;
 
-  const { orders, total, pageCount } = await listOrders({ search, status, sort, page });
+  const { orders, total, pageCount } = await listOrders({ search, status, sort, page, pageSize: 15 });
 
   return (
     <div>
@@ -82,7 +82,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
         </Table>
       </div>
 
-      <AdminPagination page={page} pageCount={pageCount} total={total} pageSize={20} />
+      <AdminPagination page={page} pageCount={pageCount} total={total} pageSize={15} />
     </div>
   );
 }

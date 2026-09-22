@@ -1,7 +1,15 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { useAdminListParams } from "@/lib/hooks/useAdminListParams";
 
 function pageWindow(page: number, pageCount: number): (number | "ellipsis")[] {
@@ -27,11 +35,25 @@ export function AdminPagination({
   total: number;
   pageSize: number;
 }) {
-  const { setPage } = useAdminListParams();
+  const pathname = usePathname();
+  const { searchParams, setPage } = useAdminListParams();
   if (total === 0) return null;
 
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
+
+  const hrefForPage = (p: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (p <= 1) params.delete("page");
+    else params.set("page", String(p));
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  };
+
+  const goToPage = (p: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setPage(p);
+  };
 
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -39,49 +61,43 @@ export function AdminPagination({
         Showing {from}–{to} of {total}
       </p>
       {pageCount > 1 && (
-        <nav aria-label="Pagination" className="flex items-center gap-1.5">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label="Previous page"
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-            className="rounded-full"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+        <Pagination className="mx-0 w-auto justify-start">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href={hrefForPage(page - 1)}
+                onClick={goToPage(page - 1)}
+                aria-disabled={page <= 1}
+                tabIndex={page <= 1 ? -1 : undefined}
+                className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              />
+            </PaginationItem>
 
-          {pageWindow(page, pageCount).map((p, i) =>
-            p === "ellipsis" ? (
-              <span key={`ellipsis-${i}`} className="px-1 text-sm text-muted-soft">
-                &hellip;
-              </span>
-            ) : (
-              <button
-                key={p}
-                type="button"
-                aria-current={p === page ? "page" : undefined}
-                onClick={() => setPage(p)}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                  p === page ? "bg-ink text-white" : "text-ink-soft hover:bg-surface"
-                }`}
-              >
-                {p}
-              </button>
-            )
-          )}
+            {pageWindow(page, pageCount).map((p, i) =>
+              p === "ellipsis" ? (
+                <PaginationItem key={`ellipsis-${i}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={p}>
+                  <PaginationLink href={hrefForPage(p)} onClick={goToPage(p)} isActive={p === page}>
+                    {p}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            )}
 
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label="Next page"
-            disabled={page >= pageCount}
-            onClick={() => setPage(page + 1)}
-            className="rounded-full"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </nav>
+            <PaginationItem>
+              <PaginationNext
+                href={hrefForPage(page + 1)}
+                onClick={goToPage(page + 1)}
+                aria-disabled={page >= pageCount}
+                tabIndex={page >= pageCount ? -1 : undefined}
+                className={page >= pageCount ? "pointer-events-none opacity-50" : undefined}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
     </div>
   );
