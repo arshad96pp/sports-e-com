@@ -43,35 +43,51 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
   const { isAuthenticated, hydrated } = useAuth();
   const { showToast } = useToast();
   const [reviewList, setReviewList] = useState(reviews);
-  const [eligibility, setEligibility] = useState<ReviewEligibility | "loading">("loading");
+  const [fetchedEligibility, setFetchedEligibility] = useState<ReviewEligibility | "loading">("loading");
   const [ownReviewId, setOwnReviewId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
+  const [prevProductId, setPrevProductId] = useState(productId);
+  const [prevReviews, setPrevReviews] = useState(reviews);
+  if (productId !== prevProductId) {
+    setPrevProductId(productId);
+    setPrevReviews(reviews);
     setReviewList(reviews);
-  }, [productId, reviews]);
+    setFetchedEligibility("loading");
+    setOwnReviewId(null);
+  } else if (reviews !== prevReviews) {
+    setPrevReviews(reviews);
+    setReviewList(reviews);
+  }
+
+  const [wasAuthenticated, setWasAuthenticated] = useState(isAuthenticated);
+  if (isAuthenticated !== wasAuthenticated) {
+    setWasAuthenticated(isAuthenticated);
+    setFetchedEligibility("loading");
+    setOwnReviewId(null);
+  }
+
+  const eligibility: ReviewEligibility | "loading" = !hydrated
+    ? "loading"
+    : !isAuthenticated
+      ? "guest"
+      : fetchedEligibility;
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (!isAuthenticated) {
-      setEligibility("guest");
-      setOwnReviewId(null);
-      return;
-    }
+    if (!hydrated || !isAuthenticated) return;
     let cancelled = false;
-    setEligibility("loading");
     getReviewEligibilityAction(productId)
       .then((result) => {
         if (cancelled) return;
-        setEligibility(result.eligibility);
+        setFetchedEligibility(result.eligibility);
         setOwnReviewId(result.ownReviewId);
       })
       .catch(() => {
         if (cancelled) return;
-        setEligibility("guest");
+        setFetchedEligibility("guest");
         setOwnReviewId(null);
       });
     return () => {
@@ -89,7 +105,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
 
   function handleReviewAdded(review: ReviewDTO) {
     setReviewList((prev) => [review, ...prev]);
-    setEligibility("already_reviewed");
+    setFetchedEligibility("already_reviewed");
     setOwnReviewId(review.id);
     setDialogOpen(false);
     showToast("Review submitted successfully", "success");
@@ -106,7 +122,7 @@ export function ProductReviews({ productId, reviews }: ProductReviewsProps) {
       }
       setReviewList((prev) => prev.filter((review) => review.id !== ownReviewId));
       setOwnReviewId(null);
-      setEligibility("eligible");
+      setFetchedEligibility("eligible");
       setDeleteOpen(false);
       showToast("Review deleted successfully", "success");
     } catch {
