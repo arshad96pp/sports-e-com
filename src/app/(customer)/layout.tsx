@@ -15,7 +15,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
     <Providers>
       <OfferAnnouncement />
       <Header />
-      <main className="flex-1">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
       <Footer />
     </Providers>
   );

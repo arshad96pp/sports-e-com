@@ -388,7 +388,7 @@ function AccountContent({ initialProfile, initialAddresses }: AccountPageClientP
   const [profile, setProfile] = useState<UserProfile | null>(initialProfile);
 
   return (
-    <div className="bg-surface">
+    <div className="flex-1 bg-surface">
       <div className="container-app py-10 sm:py-16">
         <div className="mt-4 mb-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">Welcome Back</p>

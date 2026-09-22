@@ -9,7 +9,7 @@ const NAV_LABEL_WIDTHS = ["w-14", "w-20", "w-16"];
 
 export function AccountSkeleton() {
   return (
-    <div className="bg-surface">
+    <div className="flex-1 bg-surface">
       <div className="container-app py-10 sm:py-16">
         <Bone className="h-3.5 w-40 rounded" />
 

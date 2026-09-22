@@ -22,7 +22,7 @@ export async function Footer() {
   const categories = await getAllCategories();
 
   return (
-    <footer className="mt-16 border-t border-border bg-ink text-white">
+    <footer className="border-t border-border bg-ink text-white">
       <div className="container-app grid grid-cols-2 gap-8 py-12 sm:grid-cols-2 md:grid-cols-4">
         <div className="col-span-2 sm:col-span-2 md:col-span-1">
           <div className="relative h-10 w-36">
