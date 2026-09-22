@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { getAuthSessionPort } from "@/lib/config/providers";
+import type { AuthError } from "@/lib/core/ports/auth.port";
 
 export interface CurrentUser {
   id: string;
@@ -55,6 +56,10 @@ export async function getCurrentCustomerId(): Promise<string | null> {
  * the email shape) — the UI always shows a generic "if an account exists"
  * message so this can't be used to enumerate registered emails.
  */
-export async function resetPasswordForEmail(email: string, redirectTo: string): Promise<void> {
-  await getAuthSessionPort().resetPasswordForEmail(email, redirectTo);
+export async function resetPasswordForEmail(email: string): Promise<void> {
+  await getAuthSessionPort().resetPasswordForEmail(email);
+}
+
+export async function completePasswordReset(newPassword: string): Promise<{ error: AuthError | null }> {
+  return getAuthSessionPort().completePasswordReset(newPassword);
 }

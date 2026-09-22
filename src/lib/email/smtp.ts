@@ -10,6 +10,19 @@ interface SendMailParams {
 
 let transporter: Transporter | null = null;
 
+export function isSmtpConfigured(): boolean {
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASSWORD);
+}
+
+function getFromHeader(): string {
+  const address = process.env.SMTP_FROM || process.env.SMTP_USER;
+  if (!address) {
+    throw new Error("SMTP is not configured: SMTP_FROM or SMTP_USER is not set.");
+  }
+  const name = process.env.SMTP_FROM_NAME?.trim().replace(/"/g, "");
+  return name ? `"${name}" <${address}>` : address;
+}
+
 function getTransporter(): Transporter {
   if (transporter) return transporter;
 
@@ -40,7 +53,7 @@ function getTransporter(): Transporter {
  * config or a send failure — callers decide how to handle failure.
  */
 export async function sendMail({ to, subject, html, text, replyTo }: SendMailParams) {
-  const from = process.env.SMTP_USER;
+  const from = getFromHeader();
   await getTransporter().sendMail({
     from,
     to,

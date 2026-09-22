@@ -40,17 +40,15 @@ export function ForgotPasswordClient() {
           <div className="mx-auto mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-surface">
             <KeyRound className="h-5 w-5 text-ink" />
           </div>
-          <h1 className="mt-4 font-display text-xl font-bold text-ink">Reset your password</h1>
-          <p className="mt-1 text-sm text-muted">
-            Enter the email linked to your account and we&apos;ll send you a reset link.
-          </p>
+          <h1 className="mt-4 font-display text-xl font-bold text-ink">Forgot password?</h1>
+          <p className="mt-1 text-sm text-muted">Enter the email associated with your account.</p>
         </div>
 
         {sent ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-success-soft px-5 py-6 text-center">
             <CheckCircle2 className="h-8 w-8 text-success" />
             <p className="text-sm font-medium text-ink">
-              If an account exists for <strong>{email}</strong>, a reset link is on its way.
+              If an account exists for this email, we&apos;ll send you a password reset link.
             </p>
           </div>
         ) : (
@@ -62,7 +60,9 @@ export function ForgotPasswordClient() {
               <Input
                 id="forgot-email"
                 type="email"
+                autoComplete="email"
                 required
+                disabled={isPending}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
@@ -76,8 +76,13 @@ export function ForgotPasswordClient() {
               </p>
             )}
 
-            <Button type="submit" disabled={isPending} className="mt-2 h-11 w-full rounded-full text-sm font-bold">
-              {isPending ? "Sending…" : "Send Reset Link"}
+            <Button
+              type="submit"
+              disabled={isPending}
+              aria-busy={isPending}
+              className="mt-2 h-11 w-full rounded-full text-sm font-bold"
+            >
+              {isPending ? "Sending…" : "Send reset link"}
             </Button>
           </form>
         )}

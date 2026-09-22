@@ -10,8 +10,8 @@ function sanitizeNext(next: string | null): string {
 /**
  * Finishes email-link signup confirmation — it arrives here as a `?code=...`
  * PKCE exchange (see `signUp`'s `emailRedirectTo` in auth.client.ts).
- * Password recovery does NOT go through here — see ResetPasswordClient,
- * which exchanges its own code client-side on `/auth/reset-password`.
+ * Password recovery goes through `/auth/confirm` (hashed_token + verifyOtp)
+ * and then `/auth/reset-password`.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);

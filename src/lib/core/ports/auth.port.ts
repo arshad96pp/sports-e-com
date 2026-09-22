@@ -32,7 +32,16 @@ export interface AuthError {
 export interface AuthSessionPort {
   getAuthenticatedUser(): Promise<AuthUser | null>;
   getProfileById(userId: string): Promise<ProfileRecord | null>;
-  resetPasswordForEmail(email: string, redirectTo: string): Promise<void>;
+  /**
+   * Issues a recovery link (Supabase Auth) and emails it via Nodemailer.
+   * Must not throw for unknown emails — callers always return a generic success.
+   */
+  resetPasswordForEmail(email: string): Promise<void>;
+  /**
+   * Sets a new password for the caller of the current recovery (or signed-in)
+   * session, then signs that user out globally so existing refresh tokens die.
+   */
+  completePasswordReset(newPassword: string): Promise<{ error: AuthError | null }>;
   /** Updates the caller's own display name and phone. Email is the auth identity and isn't editable here. */
   updateProfile(userId: string, data: { fullName: string; phone: string }): Promise<void>;
 }
