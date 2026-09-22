@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { Product } from "@/lib/types";
+import { getCheapestVariant } from "@/lib/data/products";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { formatPrice } from "@/lib/utils/format";
 
@@ -15,7 +16,11 @@ interface SearchProductRowProps {
 
 /** Dark, editorial-style result row used by the search overlay — image, brand, name, price. */
 export function SearchProductRow({ product, onNavigate, index = 0 }: SearchProductRowProps) {
-  const hasDiscount = product.mrp > product.price;
+  const cheapestVariant = getCheapestVariant(product);
+  const hasVariants = product.variants.length > 0;
+  const price = cheapestVariant?.price ?? product.price;
+  const mrp = cheapestVariant?.mrp ?? product.mrp;
+  const hasDiscount = mrp > price;
 
   return (
     <Link
@@ -37,9 +42,10 @@ export function SearchProductRow({ product, onNavigate, index = 0 }: SearchProdu
         <p className="mb-1 text-[10px] font-bold tracking-widest text-accent uppercase">{product.brand}</p>
         <h3 className="truncate text-base font-light text-white sm:text-lg">{product.name}</h3>
         <div className="mt-1.5 flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-white">{formatPrice(product.price)}</span>
+          {hasVariants && <span className="text-[10px] font-medium text-white/50">From</span>}
+          <span className="text-sm font-semibold text-white">{formatPrice(price)}</span>
           {hasDiscount && (
-            <span className="text-xs text-white/40 line-through">{formatPrice(product.mrp)}</span>
+            <span className="text-xs text-white/40 line-through">{formatPrice(mrp)}</span>
           )}
         </div>
       </div>

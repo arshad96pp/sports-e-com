@@ -19,11 +19,18 @@ import type {
 // `category` uses an inner join (`!inner`) so a product row always carries
 // its category — every product has a required (NOT NULL) category, so this
 // never drops rows a left join would have kept.
+//
+// `product_variants` only selects size-only rows (`color` is always null for
+// this feature — see the 20260922180000 migration) so a hypothetical future
+// color-bearing variant row never leaks into this feature's price selector.
+const VARIANT_SELECT = "product_variants ( id, size, price_override, mrp_override, stock, color )";
+
 const PRODUCT_SELECT = `
   *,
   category:categories!inner ( slug, name ),
   subcategory:subcategories ( name ),
-  product_images ( url, alt_text, sort_order )
+  product_images ( url, alt_text, sort_order ),
+  ${VARIANT_SELECT}
 `;
 
 // Same as PRODUCT_SELECT minus `highlights`/`specifications` (the jsonb
@@ -38,7 +45,8 @@ const PRODUCT_LIST_SELECT = `
   created_at, sold_count,
   category:categories!inner ( slug, name ),
   subcategory:subcategories ( name ),
-  product_images ( url, alt_text, sort_order )
+  product_images ( url, alt_text, sort_order ),
+  ${VARIANT_SELECT}
 `;
 
 /**
@@ -85,12 +93,29 @@ interface ProductRow {
   category: { slug: string; name: string } | null;
   subcategory: { name: string } | null;
   product_images: { url: string; alt_text: string; sort_order: number }[] | null;
+  product_variants:
+    | { id: string; size: string; price_override: number; mrp_override: number; stock: number; color: string | null }[]
+    | null;
 }
 
 function toDTO(p: ProductRow): Product {
   const images = [...(p.product_images ?? [])]
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((img) => ({ url: img.url, alt: img.alt_text || p.name }));
+
+  // Only size-only rows (`color` null) belong to this feature — a
+  // hypothetical future color-bearing variant row is left for that feature
+  // to interpret, never surfaced here. Ordered to match `p.sizes` (the order
+  // the admin entered them in) rather than arbitrary row order.
+  const variantsBySize = new Map(
+    (p.product_variants ?? [])
+      .filter((v) => v.color === null)
+      .map((v) => [v.size.trim().toLowerCase(), v] as const)
+  );
+  const variants = p.sizes
+    .map((size) => variantsBySize.get(size.trim().toLowerCase()))
+    .filter((v): v is NonNullable<typeof v> => v !== undefined)
+    .map((v) => ({ id: v.id, size: v.size, price: Number(v.price_override), mrp: Number(v.mrp_override), stock: v.stock }));
 
   return {
     id: p.id,
@@ -109,6 +134,7 @@ function toDTO(p: ProductRow): Product {
     reviewCount: p.review_count,
     colors: p.colors,
     sizes: p.sizes,
+    variants,
     description: p.description,
     // Omitted by PRODUCT_LIST_SELECT (listing/card contexts never render these) —
     // fall back to empty rather than `undefined` when a row came from that projection.
@@ -152,6 +178,26 @@ function toAdminRow(values: ProductFormValues) {
     seo_title: values.seoTitle || null,
     seo_description: values.seoDescription || null,
   };
+}
+
+/**
+ * Writes a product's variant rows via the `sync_product_variants` RPC (see
+ * the 20260922180000 migration) — a single atomic statement that inserts new
+ * variants, updates changed ones, and deletes any that were removed from
+ * `values.variants`, so a product+variants save never ends up partially
+ * applied. The RPC re-validates size/price server-side regardless of what
+ * this call sends.
+ */
+async function syncProductVariants(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  productId: string,
+  variants: ProductFormValues["variants"]
+): Promise<void> {
+  const { error } = await supabase.rpc("sync_product_variants", {
+    p_product_id: productId,
+    p_variants: variants.map((v) => ({ id: v.id ?? null, size: v.size, price: v.price, mrp: v.mrp, stock: v.stock })),
+  });
+  if (error) throw new Error(error.message);
 }
 
 function escapeRegExp(value: string): string {
@@ -572,7 +618,9 @@ export function createSupabaseProductRepository(): ProductRepository {
       const supabase = await createClient();
       const { data } = await supabase
         .from("products")
-        .select("*, product_images ( id, url, alt_text, sort_order )")
+        .select(
+          "*, product_images ( id, url, alt_text, sort_order ), product_variants ( id, size, price_override, mrp_override, stock, color )"
+        )
         .eq("id", id)
         .maybeSingle();
       if (!data) return null;
@@ -594,6 +642,20 @@ export function createSupabaseProductRepository(): ProductRepository {
         stock: data.stock,
         sizes: data.sizes,
         colors: data.colors,
+        // Ordered to match `data.sizes` (the admin's own Sizes list order) rather
+        // than price, since the Size Variants section renders one row per size
+        // in that order.
+        variants: (() => {
+          const bySize = new Map(
+            (data.product_variants ?? [])
+              .filter((v) => v.color === null)
+              .map((v) => [v.size.trim().toLowerCase(), v] as const)
+          );
+          return (data.sizes as string[])
+            .map((size) => bySize.get(size.trim().toLowerCase()))
+            .filter((v): v is NonNullable<typeof v> => v !== undefined)
+            .map((v) => ({ id: v.id, size: v.size, price: Number(v.price_override), mrp: Number(v.mrp_override), stock: v.stock }));
+        })(),
         highlights: data.highlights,
         specifications: (data.specifications as unknown as ProductSpec[]) ?? [],
         isFeatured: data.is_featured,
@@ -625,6 +687,7 @@ export function createSupabaseProductRepository(): ProductRepository {
           throw new Error(error.message);
         }
         if (!data) throw new Error("Could not create product.");
+        await syncProductVariants(supabase, data.id, values.variants);
         return { id: data.id };
       }
 
@@ -639,7 +702,10 @@ export function createSupabaseProductRepository(): ProductRepository {
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         const sku = `${prefix}-${String(candidate).padStart(3, "0")}`;
         const { data, error } = await supabase.from("products").insert({ ...row, sku }).select("id").single();
-        if (!error && data) return { id: data.id };
+        if (!error && data) {
+          await syncProductVariants(supabase, data.id, values.variants);
+          return { id: data.id };
+        }
         if (error && isUniqueViolation(error, "slug")) {
           throw new Error(`Slug "${values.slug}" is already in use. Choose a different slug.`);
         }
@@ -661,6 +727,7 @@ export function createSupabaseProductRepository(): ProductRepository {
         }
         throw new Error(error.message);
       }
+      await syncProductVariants(supabase, id, values.variants);
     },
 
     async previewNextSku(slugOrPrefix: string): Promise<string> {

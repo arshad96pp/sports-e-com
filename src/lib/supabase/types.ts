@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -94,6 +99,7 @@ export type Database = {
           quantity: number
           size: string | null
           updated_at: string
+          variant_id: string | null
         }
         Insert: {
           cart_id: string
@@ -104,6 +110,7 @@ export type Database = {
           quantity?: number
           size?: string | null
           updated_at?: string
+          variant_id?: string | null
         }
         Update: {
           cart_id?: string
@@ -114,6 +121,7 @@ export type Database = {
           quantity?: number
           size?: string | null
           updated_at?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -128,6 +136,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -402,6 +417,7 @@ export type Database = {
           product_sku: string
           quantity: number
           size: string | null
+          variant_id: string | null
         }
         Insert: {
           color?: string | null
@@ -413,6 +429,7 @@ export type Database = {
           product_sku: string
           quantity: number
           size?: string | null
+          variant_id?: string | null
         }
         Update: {
           color?: string | null
@@ -424,6 +441,7 @@ export type Database = {
           product_sku?: string
           quantity?: number
           size?: string | null
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -438,6 +456,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -557,31 +582,37 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
-          price_override: number | null
+          mrp_override: number
+          price_override: number
           product_id: string
-          size: string | null
+          size: string
           sku: string
           stock: number
+          updated_at: string
         }
         Insert: {
           color?: string | null
           created_at?: string
           id?: string
-          price_override?: number | null
+          mrp_override: number
+          price_override: number
           product_id: string
-          size?: string | null
+          size: string
           sku: string
           stock?: number
+          updated_at?: string
         }
         Update: {
           color?: string | null
           created_at?: string
           id?: string
-          price_override?: number | null
+          mrp_override?: number
+          price_override?: number
           product_id?: string
-          size?: string | null
+          size?: string
           sku?: string
           stock?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -917,13 +948,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      best_active_offer_percent: {
+        Args: { p_product_id: string }
+        Returns: number
+      }
       create_order: {
-        Args: { p_address: Json; p_address_id: string | null; p_lines: Json }
+        Args: { p_address: Json; p_address_id: string; p_lines: Json }
         Returns: Json
       }
       generate_order_number: { Args: never; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
-      best_active_offer_percent: { Args: { p_product_id: string }; Returns: number }
+      refresh_product_rating: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
+      sync_product_variants: {
+        Args: { p_product_id: string; p_variants: Json }
+        Returns: undefined
+      }
       update_order_status: {
         Args: {
           p_order_id: string
@@ -1070,4 +1112,3 @@ export const Constants = {
     },
   },
 } as const
-

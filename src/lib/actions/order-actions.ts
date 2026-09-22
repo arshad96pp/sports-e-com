@@ -44,7 +44,13 @@ export async function buildWhatsAppOrderLinkAction(
   try {
     order = await orderService.placeOrder(
       parsedAddress.data,
-      lines.map((l) => ({ productId: l.productId, quantity: l.quantity, size: l.size ?? null, color: l.color ?? null }))
+      lines.map((l) => ({
+        productId: l.productId,
+        variantId: l.variantId ?? null,
+        quantity: l.quantity,
+        size: l.size ?? null,
+        color: l.color ?? null,
+      }))
     );
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Could not place your order. Please try again." };

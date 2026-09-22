@@ -5,6 +5,8 @@ export interface WhatsAppOrderLine {
   name: string;
   /** Real database product id — used to look up the product's image, never shown to the customer. */
   productId: string;
+  /** Selected size variant, if any — the authoritative reference; `price` below is for UI display only, never trusted server-side. */
+  variantId?: string | null;
   /** Human-readable product code (e.g. "FB-101") — what actually prints as "Product ID" in the message. */
   sku: string;
   quantity: number;

@@ -24,12 +24,13 @@ import {
 
 const STORAGE_KEY = "stryde.cart";
 
-export function cartKey(productId: string, size: string | null, color: string | null) {
-  return `${productId}::${size ?? "-"}::${color ?? "-"}`;
+export function cartKey(productId: string, variantId: string | null, size: string | null, color: string | null) {
+  return `${productId}::${variantId ?? "-"}::${size ?? "-"}::${color ?? "-"}`;
 }
 
 interface AddItemOptions {
   quantity?: number;
+  variantId?: string | null;
   size?: string | null;
   color?: string | null;
   /** Shown in the "added to cart" toast — pass `product.name` from the call site so this never needs its own product lookup. */
@@ -42,8 +43,8 @@ interface CartContextValue {
   /** False until the cart has been restored from localStorage or the DB. */
   isInitialized: boolean;
   addItem: (productId: string, opts?: AddItemOptions) => void;
-  removeItem: (productId: string, size: string | null, color: string | null) => void;
-  updateQuantity: (productId: string, size: string | null, color: string | null, quantity: number) => void;
+  removeItem: (productId: string, variantId: string | null, size: string | null, color: string | null) => void;
+  updateQuantity: (productId: string, variantId: string | null, size: string | null, color: string | null, quantity: number) => void;
   clear: () => Promise<void>;
 }
 
@@ -105,26 +106,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addItem = useCallback<CartContextValue["addItem"]>(
     (productId, opts) => {
       const quantity = opts?.quantity ?? 1;
+      const variantId = opts?.variantId ?? null;
       const size = opts?.size ?? null;
       const color = opts?.color ?? null;
 
       setItems((prev) => {
-        const key = cartKey(productId, size, color);
-        const existing = prev.find((i) => cartKey(i.productId, i.size, i.color) === key);
+        const key = cartKey(productId, variantId, size, color);
+        const existing = prev.find((i) => cartKey(i.productId, i.variantId, i.size, i.color) === key);
         if (existing) {
           return prev.map((i) =>
-            cartKey(i.productId, i.size, i.color) === key
+            cartKey(i.productId, i.variantId, i.size, i.color) === key
               ? { ...i, quantity: i.quantity + quantity }
               : i
           );
         }
-        return [...prev, { productId, quantity, size, color }];
+        return [...prev, { productId, variantId, quantity, size, color }];
       });
 
       if (isAuthed) {
-        addCartItemAction(productId, quantity, size, color).catch(() => {
-          showToast("Couldn't sync your cart. Please refresh and try again.", "error");
-        });
+        addCartItemAction(productId, variantId, quantity, size, color)
+          .then((result) => {
+            if (!result.ok) showToast(result.error ?? "Couldn't sync your cart. Please refresh and try again.", "error");
+          })
+          .catch(() => {
+            showToast("Couldn't sync your cart. Please refresh and try again.", "error");
+          });
       }
       showToast(`${opts?.productName ?? "Item"} added to cart`, "cart");
     },
@@ -132,11 +138,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const removeItem = useCallback<CartContextValue["removeItem"]>(
-    (productId, size, color) => {
-      const key = cartKey(productId, size, color);
-      setItems((prev) => prev.filter((i) => cartKey(i.productId, i.size, i.color) !== key));
+    (productId, variantId, size, color) => {
+      const key = cartKey(productId, variantId, size, color);
+      setItems((prev) => prev.filter((i) => cartKey(i.productId, i.variantId, i.size, i.color) !== key));
       if (isAuthed) {
-        removeCartItemAction(productId, size, color).catch(() => {
+        removeCartItemAction(productId, variantId, size, color).catch(() => {
           showToast("Couldn't sync your cart. Please refresh and try again.", "error");
         });
       }
@@ -145,17 +151,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateQuantity = useCallback<CartContextValue["updateQuantity"]>(
-    (productId, size, color, quantity) => {
-      const key = cartKey(productId, size, color);
+    (productId, variantId, size, color, quantity) => {
+      const key = cartKey(productId, variantId, size, color);
       setItems((prev) =>
         quantity <= 0
-          ? prev.filter((i) => cartKey(i.productId, i.size, i.color) !== key)
+          ? prev.filter((i) => cartKey(i.productId, i.variantId, i.size, i.color) !== key)
           : prev.map((i) =>
-              cartKey(i.productId, i.size, i.color) === key ? { ...i, quantity } : i
+              cartKey(i.productId, i.variantId, i.size, i.color) === key ? { ...i, quantity } : i
             )
       );
       if (isAuthed) {
-        setCartItemQuantityAction(productId, size, color, quantity).catch(() => {
+        setCartItemQuantityAction(productId, variantId, size, color, quantity).catch(() => {
           showToast("Couldn't sync your cart. Please refresh and try again.", "error");
         });
       }

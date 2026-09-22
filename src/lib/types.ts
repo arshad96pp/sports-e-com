@@ -19,6 +19,19 @@ export interface ProductImage {
   alt: string;
 }
 
+/**
+ * A purchasable size variant of a product — its own authoritative price.
+ * The one canonical variant shape used everywhere (product detail, cart,
+ * checkout, admin form) instead of ad-hoc duplicates.
+ */
+export interface ProductVariant {
+  id: string;
+  size: string;
+  price: number;
+  mrp: number;
+  stock: number;
+}
+
 export interface Product {
   id: string;
   sku: string;
@@ -36,6 +49,8 @@ export interface Product {
   reviewCount: number;
   colors: string[];
   sizes: string[];
+  /** Purchasable size variants, each with its own price. Empty for a product that only has the base `price` above. */
+  variants: ProductVariant[];
   description: string;
   highlights: string[];
   specs: ProductSpec[];
@@ -51,6 +66,8 @@ export interface Product {
 
 export interface CartItem {
   productId: string;
+  /** Identifies which size variant this line is for — the authoritative reference, never trust `size` alone for pricing. Null for a product with no variants. */
+  variantId: string | null;
   quantity: number;
   size: string | null;
   color: string | null;

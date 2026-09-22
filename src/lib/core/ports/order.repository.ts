@@ -9,6 +9,7 @@ export type OrderStatus = "pending" | "confirmed" | "shipped" | "cancelled";
 
 export interface OrderItemDTO {
   productId: string | null;
+  variantId: string | null;
   productName: string;
   productSku: string;
   quantity: number;
@@ -63,6 +64,7 @@ export interface AdminOrderQueryResult {
 
 export interface OrderLineInput {
   productId: string;
+  variantId: string | null;
   quantity: number;
   size: string | null;
   color: string | null;

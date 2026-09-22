@@ -11,30 +11,33 @@ export async function getCartItems(userId: string): Promise<CartItemRow[]> {
 export async function addCartItem(
   userId: string,
   productId: string,
+  variantId: string | null,
   quantity: number,
   size: string | null,
   color: string | null
 ): Promise<void> {
-  return getCartRepository().addCartItem(userId, productId, quantity, size, color);
+  return getCartRepository().addCartItem(userId, productId, variantId, quantity, size, color);
 }
 
 export async function setCartItemQuantity(
   userId: string,
   productId: string,
+  variantId: string | null,
   size: string | null,
   color: string | null,
   quantity: number
 ): Promise<void> {
-  return getCartRepository().setCartItemQuantity(userId, productId, size, color, quantity);
+  return getCartRepository().setCartItemQuantity(userId, productId, variantId, size, color, quantity);
 }
 
 export async function removeCartItem(
   userId: string,
   productId: string,
+  variantId: string | null,
   size: string | null,
   color: string | null
 ): Promise<void> {
-  return getCartRepository().removeCartItem(userId, productId, size, color);
+  return getCartRepository().removeCartItem(userId, productId, variantId, size, color);
 }
 
 export async function clearCart(userId: string): Promise<void> {
@@ -44,9 +47,9 @@ export async function clearCart(userId: string): Promise<void> {
 /** Merge a guest's localStorage cart into the DB cart right after login. */
 export async function mergeCartItems(
   userId: string,
-  items: { productId: string; quantity: number; size: string | null; color: string | null }[]
+  items: { productId: string; variantId: string | null; quantity: number; size: string | null; color: string | null }[]
 ): Promise<void> {
   for (const item of items) {
-    await addCartItem(userId, item.productId, item.quantity, item.size, item.color);
+    await addCartItem(userId, item.productId, item.variantId, item.quantity, item.size, item.color);
   }
 }

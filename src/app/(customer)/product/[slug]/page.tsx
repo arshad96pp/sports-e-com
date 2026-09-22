@@ -10,7 +10,7 @@ import { ProductDetailClient } from "@/components/product/ProductDetailClient";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo/structured-data";
 import { formatPrice } from "@/lib/utils/format";
-import { getDiscountPercent } from "@/lib/data/products";
+import { getDiscountPercent, getFromPrice } from "@/lib/data/products";
 import { sanitizeDescriptionHtml, descriptionToPlainText } from "@/lib/utils/sanitize-html";
 
 export async function generateStaticParams() {
@@ -23,8 +23,10 @@ export async function generateMetadata(props: PageProps<"/product/[slug]">): Pro
   const product = await getProductBySlug(slug);
   if (!product) return {};
 
-  const discount = getDiscountPercent(product);
-  const description = `${product.shortInfo} — ${formatPrice(product.price)}${
+  const hasVariants = product.variants.length > 0;
+  const discount = hasVariants ? 0 : getDiscountPercent(product);
+  const priceLabel = hasVariants ? `from ${formatPrice(getFromPrice(product))}` : formatPrice(product.price);
+  const description = `${product.shortInfo} — ${priceLabel}${
     discount > 0 ? ` (${discount}% off ${formatPrice(product.mrp)})` : ""
   }. ${descriptionToPlainText(product.description)}`;
 

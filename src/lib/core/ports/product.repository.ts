@@ -75,6 +75,15 @@ export interface AdminProductQueryResult {
   pageCount: number;
 }
 
+/** A variant row as the admin form edits it — `id` is absent/undefined for a not-yet-saved new variant. */
+export interface VariantInput {
+  id?: string;
+  size: string;
+  price: number;
+  mrp: number;
+  stock: number;
+}
+
 export interface ProductFormValues {
   name: string;
   slug: string;
@@ -91,6 +100,7 @@ export interface ProductFormValues {
   stock: number;
   sizes: string[];
   colors: string[];
+  variants: VariantInput[];
   highlights: string[];
   specifications: ProductSpec[];
   isFeatured: boolean;

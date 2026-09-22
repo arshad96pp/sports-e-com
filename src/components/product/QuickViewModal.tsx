@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuickView } from "@/lib/context/QuickViewContext";
 import { useCart } from "@/lib/context/CartContext";
-import { getDiscountPercent } from "@/lib/data/products";
+import { resolveVariantMrp, resolveVariantPrice } from "@/lib/data/products";
 import { stripHtmlToText } from "@/lib/utils/format";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { RatingStars } from "@/components/ui/RatingStars";
@@ -17,19 +17,27 @@ import { Button } from "@/components/ui/button";
 export function QuickViewModal() {
   const { product, closeQuickView } = useQuickView();
   const { addItem } = useCart();
+  const [variantId, setVariantId] = useState<string | null>(null);
   const [size, setSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (product) {
+      const hasVariants = product.variants.length > 0;
+      const defaultVariant = hasVariants ? (product.variants.find((v) => v.stock > 0) ?? product.variants[0]) : null;
       // Reset selection each time a new product opens in quick view.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSize(product.sizes[0] ?? null);
+      setVariantId(defaultVariant?.id ?? null);
+      setSize(defaultVariant ? defaultVariant.size : (product.sizes[0] ?? null));
       setQuantity(1);
     }
   }, [product]);
 
-  const discount = product ? getDiscountPercent(product) : 0;
+  const hasVariants = Boolean(product && product.variants.length > 0);
+  const displayPrice = product ? resolveVariantPrice(product, variantId) : 0;
+  const displayMrp = product ? resolveVariantMrp(product, variantId) : 0;
+  const selectedVariant = product && hasVariants ? product.variants.find((v) => v.id === variantId) : undefined;
+  const inStock = product ? (hasVariants ? (selectedVariant?.stock ?? 0) > 0 : product.inStock) : false;
 
   return (
     <Dialog open={!!product} onOpenChange={(next) => !next && closeQuickView()}>
@@ -51,30 +59,57 @@ export function QuickViewModal() {
                 <RatingStars rating={product.rating} reviewCount={product.reviewCount} />
               </div>
               <div className="mt-3">
-                <PriceBlock price={product.price} mrp={product.mrp} size="md" />
-                {discount > 0 && <p className="mt-1 text-xs text-muted">You save on this deal</p>}
+                <PriceBlock price={displayPrice} mrp={displayMrp} size="md" />
               </div>
-              {!product.inStock && <p className="mt-2 text-xs font-medium text-signal">Out of Stock</p>}
+              {!inStock && <p className="mt-2 text-xs font-medium text-signal">Out of Stock</p>}
               <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-soft">{stripHtmlToText(product.description)}</p>
 
-              {product.sizes.length > 0 && (
+              {hasVariants ? (
                 <div className="mt-4">
                   <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink">Size</p>
                   <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSize(s)}
-                        className={`min-w-11 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-                          size === s ? "border-ink bg-ink text-white" : "border-border-strong text-ink-soft"
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
+                    {product.variants.map((v) => {
+                      const outOfStock = v.stock <= 0;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          disabled={outOfStock}
+                          title={outOfStock ? `${v.size} is out of stock` : undefined}
+                          onClick={() => {
+                            setVariantId(v.id);
+                            setSize(v.size);
+                          }}
+                          className={`min-w-11 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-muted-soft disabled:opacity-50 ${
+                            variantId === v.id ? "border-ink bg-ink text-white" : "border-border-strong text-ink-soft"
+                          }`}
+                        >
+                          {v.size}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+              ) : (
+                product.sizes.length > 0 && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink">Size</p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.sizes.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setSize(s)}
+                          className={`min-w-11 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                            size === s ? "border-ink bg-ink text-white" : "border-border-strong text-ink-soft"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
               )}
 
               <div className="mt-4 flex items-center gap-3">
@@ -85,13 +120,13 @@ export function QuickViewModal() {
               <div className="mt-5 flex items-center gap-3">
                 <Button
                   onClick={() => {
-                    addItem(product.id, { quantity, size, productName: product.name });
+                    addItem(product.id, { quantity, variantId, size, productName: product.name });
                     closeQuickView();
                   }}
-                  disabled={!product.inStock}
+                  disabled={!inStock}
                   className="h-11 flex-1 rounded-full text-sm font-bold"
                 >
-                  {product.inStock ? "Add to Cart" : "Out of Stock"}
+                  {inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
                 <Button asChild variant="outline" className="h-11 flex-1 rounded-full text-sm font-semibold">
                   <Link href={`/product/${product.slug}`} onClick={closeQuickView}>

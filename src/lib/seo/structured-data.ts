@@ -1,5 +1,6 @@
 import { SITE_URL, STORE } from "@/lib/config";
 import type { Product } from "@/lib/types";
+import { getFromPrice } from "@/lib/data/products";
 
 export interface BreadcrumbEntry {
   name: string;
@@ -39,7 +40,7 @@ export function productJsonLd(product: Product) {
       "@type": "Offer",
       url: `${SITE_URL}/product/${product.slug}`,
       priceCurrency: "INR",
-      price: product.price,
+      price: getFromPrice(product),
       availability: product.inStock
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",

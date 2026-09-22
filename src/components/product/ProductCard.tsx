@@ -17,7 +17,19 @@ interface ProductCardProps {
 
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const { addItem } = useCart();
-  const discount = getDiscountPercent(product);
+  // Cheapest *available* variant, if any — what the card's "From ₹X" price
+  // refers to and what the quick-add button adds, so the two stay
+  // consistent. Falls back to the cheapest overall if every size is out of
+  // stock, so the card still shows a price rather than nothing.
+  const inStockVariants = product.variants.filter((v) => v.stock > 0);
+  const cheapestVariant =
+    inStockVariants.length > 0
+      ? inStockVariants.reduce((min, v) => (v.price < min.price ? v : min), inStockVariants[0])
+      : (product.variants[0] ?? null);
+  const cardPrice = cheapestVariant?.price ?? product.price;
+  const cardMrp = cheapestVariant?.mrp ?? product.mrp;
+  const discount = getDiscountPercent({ price: cardPrice, mrp: cardMrp });
+  const inStock = product.variants.length > 0 ? inStockVariants.length > 0 : product.inStock;
 
   return (
     <Link href={`/product/${product.slug}`} className="product-card group relative z-0 block h-full">
@@ -56,26 +68,30 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             <RatingStars rating={product.rating} tone="card" showCount={false} />
             <span
               className={
-                product.inStock
+                inStock
                   ? "shrink-0 rounded-full bg-success-soft px-2 py-0.5 text-[9px] font-semibold tracking-wide text-success uppercase"
                   : "shrink-0 rounded-full bg-signal-soft px-2 py-0.5 text-[9px] font-semibold tracking-wide text-signal uppercase"
               }
             >
-              {product.inStock ? "In Stock" : "Out of Stock"}
+              {inStock ? "In Stock" : "Out of Stock"}
             </span>
           </div>
 
           <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-1">
-            <PriceBlock price={product.price} mrp={product.mrp} tone="card" />
+            <PriceBlock price={cardPrice} mrp={cardMrp} tone="card" />
 
             <button
               type="button"
-              aria-label={product.inStock ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
-              disabled={!product.inStock}
+              aria-label={inStock ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+              disabled={!inStock}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                addItem(product.id, { size: product.sizes[0] ?? null, productName: product.name });
+                addItem(product.id, {
+                  variantId: cheapestVariant?.id ?? null,
+                  size: cheapestVariant?.size ?? product.sizes[0] ?? null,
+                  productName: product.name,
+                });
               }}
               className="flex h-8 w-8 cursor-pointer shrink-0 items-center justify-center rounded-full border border-ink bg-ink text-white shadow-[0_1px_4px_rgba(16,24,32,0.08)] transition-all duration-200 ease-out hover:border-accent hover:bg-accent hover:text-accent-ink hover:shadow-[0_2px_10px_rgba(16,24,32,0.14)] active:scale-95 disabled:cursor-not-allowed disabled:border-border-strong disabled:bg-border-strong disabled:text-muted-soft disabled:hover:border-border-strong disabled:hover:bg-border-strong disabled:hover:text-muted-soft sm:h-10 sm:w-10"
             >

@@ -12,7 +12,7 @@ import type {
 } from "@/lib/core/ports/order.repository";
 
 const DETAIL_SELECT =
-  "id, order_number, status, subtotal, discount, total, address_full_name, address_phone, address_line1, address_city, address_state, address_pincode, created_at, order_items ( product_id, product_name, product_sku, quantity, price, size, color )";
+  "id, order_number, status, subtotal, discount, total, address_full_name, address_phone, address_line1, address_city, address_state, address_pincode, created_at, order_items ( product_id, variant_id, product_name, product_sku, quantity, price, size, color )";
 
 const LIST_SELECT = "id, order_number, status, total, created_at, address_full_name, order_items ( quantity )";
 
@@ -34,9 +34,14 @@ export function createSupabaseOrderRepository(): OrderRepository {
           state: address.state,
           pincode: address.pincode,
         },
-        p_address_id: null,
+        // create_order's `p_address_id uuid` param has no NOT NULL constraint
+        // (Postgres args can't have one) and PostgREST accepts a JSON null
+        // for it fine — `supabase gen types` just doesn't reflect that in
+        // its Args type, unlike the version last used to generate this file.
+        p_address_id: null as unknown as string,
         p_lines: lines.map((l) => ({
           product_id: l.productId,
+          variant_id: l.variantId ?? null,
           quantity: l.quantity,
           size: l.size ?? null,
           color: l.color ?? null,
@@ -52,6 +57,7 @@ export function createSupabaseOrderRepository(): OrderRepository {
         total: number;
         items?: {
           product_id: string;
+          variant_id?: string | null;
           product_name: string;
           product_sku: string;
           quantity: number;
@@ -66,6 +72,7 @@ export function createSupabaseOrderRepository(): OrderRepository {
         total: Number(order.total),
         items: (order.items ?? []).map((item) => ({
           productId: item.product_id,
+          variantId: item.variant_id || null,
           productName: item.product_name,
           productSku: item.product_sku,
           quantity: item.quantity,
@@ -150,6 +157,7 @@ export function createSupabaseOrderRepository(): OrderRepository {
         createdAt: data.created_at,
         items: data.order_items.map((i) => ({
           productId: i.product_id,
+          variantId: i.variant_id,
           productName: i.product_name,
           productSku: i.product_sku,
           quantity: i.quantity,

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RichTextEditor } from "@/components/admin/products/RichTextEditor";
 import type { AdminCategory } from "@/lib/services/admin-category-service";
 import type { ProductFormValues } from "@/lib/services/admin-product-service";
+import type { VariantInput } from "@/lib/core/ports/product.repository";
 import { createProductAction, updateProductAction, previewSkuAction, checkSkuAvailableAction } from "@/lib/actions/admin/product-actions";
 import { slugify } from "@/lib/utils/slug";
 import { useToast } from "@/lib/context/ToastContext";
@@ -64,6 +65,93 @@ function TagListInput({ label, values, onChange, placeholder }: { label: string;
   );
 }
 
+/**
+ * One row per size, sourced from the Sizes list above — sizes are added/removed
+ * there, not here. Each row just carries that size's own price/MRP/stock; this
+ * renders nothing when there are no sizes, so a single-price product's form
+ * looks exactly as it did before this section existed.
+ */
+function VariantEditor({
+  sizes,
+  variants,
+  onChange,
+}: {
+  sizes: string[];
+  variants: VariantInput[];
+  onChange: (v: VariantInput[]) => void;
+}) {
+  function variantFor(size: string): VariantInput {
+    const key = size.trim().toLowerCase();
+    return variants.find((v) => v.size.trim().toLowerCase() === key) ?? { size, price: 0, mrp: 0, stock: 0 };
+  }
+
+  function updateSize(size: string, patch: Partial<VariantInput>) {
+    const key = size.trim().toLowerCase();
+    const exists = variants.some((v) => v.size.trim().toLowerCase() === key);
+    onChange(
+      exists
+        ? variants.map((v) => (v.size.trim().toLowerCase() === key ? { ...v, ...patch } : v))
+        : [...variants, { ...variantFor(size), ...patch }]
+    );
+  }
+
+  if (sizes.length === 0) return null;
+
+  return (
+    <div>
+      <Label className="mb-1.5 text-xs font-semibold text-ink-soft">Size Variants</Label>
+      <p className="mb-2 text-xs text-muted">
+        Each size needs its own price, MRP and stock — the customer picks a size on the product page and pays that
+        size&apos;s price. Add or remove sizes above.
+      </p>
+      <div className="flex flex-col gap-3">
+        {sizes.map((size) => {
+          const variant = variantFor(size);
+          return (
+            <div key={size} className="rounded-lg border border-border p-3">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink">{size}</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="mb-1 text-[10px] font-medium text-muted-soft">Price (₹)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={variant.price}
+                    onChange={(e) => updateSize(size, { price: Number(e.target.value) })}
+                    className="h-10"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1 text-[10px] font-medium text-muted-soft">MRP (₹)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={variant.mrp}
+                    onChange={(e) => updateSize(size, { mrp: Number(e.target.value) })}
+                    className="h-10"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1 text-[10px] font-medium text-muted-soft">Stock</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={variant.stock}
+                    onChange={(e) => updateSize(size, { stock: Number(e.target.value) })}
+                    className="h-10"
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const EMPTY: ProductFormValues = {
   name: "",
   slug: "",
@@ -80,6 +168,7 @@ const EMPTY: ProductFormValues = {
   stock: 0,
   sizes: [],
   colors: [],
+  variants: [],
   highlights: [],
   specifications: [],
   isFeatured: false,
@@ -103,15 +192,54 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
   const [slugTouched, setSlugTouched] = useState(Boolean(initial));
   const [skuTouched, setSkuTouched] = useState(Boolean(initial));
   const [skuError, setSkuError] = useState<string | null>(null);
+  const [sizeError, setSizeError] = useState<string | null>(null);
   const [isGeneratingSku, startSkuTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
 
   const category = categories.find((c) => c.id === values.categoryId);
+  const hasSizeVariants = values.sizes.length > 0;
+
+  // While sizes exist, the top-level Price/MRP/Stock fields are disabled and
+  // instead just preview a summary derived from the variants (lowest price,
+  // lowest MRP, total stock) — this is what actually gets submitted for
+  // those columns, so the admin list/detail views still show something
+  // meaningful instead of stale or zeroed-out values.
+  const derivedPrice = values.variants.length > 0 ? Math.min(...values.variants.map((v) => v.price)) : 0;
+  const derivedMrp = values.variants.length > 0 ? Math.min(...values.variants.map((v) => v.mrp)) : 0;
+  const derivedStock = values.variants.reduce((sum, v) => sum + (Number.isFinite(v.stock) ? v.stock : 0), 0);
+  const displayPrice = hasSizeVariants ? derivedPrice : values.price;
+  const displayMrp = hasSizeVariants ? derivedMrp : values.mrp;
+  const displayStock = hasSizeVariants ? derivedStock : values.stock;
 
   function set<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  // The single place sizes are added/removed — keeps `variants` in lockstep:
+  // a new size gets a blank price/MRP/stock row, a removed size loses its
+  // row, and an existing size keeps whatever it already had. Case-insensitive
+  // duplicates are rejected here since price/MRP/stock keys off size text.
+  function handleSizesChange(newSizes: string[]) {
+    const seen = new Set<string>();
+    const deduped: string[] = [];
+    let hadDuplicate = false;
+    for (const s of newSizes) {
+      const key = s.trim().toLowerCase();
+      if (seen.has(key)) {
+        hadDuplicate = true;
+        continue;
+      }
+      seen.add(key);
+      deduped.push(s);
+    }
+    setSizeError(hadDuplicate ? "Duplicate sizes aren't allowed — each size can only be added once." : null);
+    setValues((v) => {
+      const bySize = new Map(v.variants.map((variant) => [variant.size.trim().toLowerCase(), variant] as const));
+      const nextVariants = deduped.map((size) => bySize.get(size.trim().toLowerCase()) ?? { size, price: 0, mrp: 0, stock: 0 });
+      return { ...v, sizes: deduped, variants: nextVariants };
+    });
   }
 
   // Auto-generates/refreshes the SKU from the slug while creating a new
@@ -149,7 +277,7 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
     e.preventDefault();
     setError(null);
 
-    if (values.price > values.mrp) {
+    if (!hasSizeVariants && values.price > values.mrp) {
       setError("Price cannot be higher than MRP.");
       return;
     }
@@ -159,10 +287,30 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
       return;
     }
 
+    if (hasSizeVariants) {
+      for (const size of values.sizes) {
+        const variant = values.variants.find((v) => v.size.trim().toLowerCase() === size.trim().toLowerCase());
+        const hasPrice = variant && Number.isFinite(variant.price) && variant.price > 0;
+        const hasMrp = variant && Number.isFinite(variant.mrp) && variant.mrp > 0;
+        const hasStock = variant && Number.isFinite(variant.stock) && variant.stock >= 0;
+        if (!hasPrice || !hasMrp || !hasStock) {
+          setError(`Please enter price, MRP and stock for ${size}.`);
+          return;
+        }
+        if (variant.price > variant.mrp) {
+          setError(`Price cannot be higher than MRP for ${size}.`);
+          return;
+        }
+      }
+    }
+
     startTransition(async () => {
+      const payload: ProductFormValues = hasSizeVariants
+        ? { ...values, price: displayPrice, mrp: displayMrp, stock: displayStock }
+        : values;
       const result = productId
-        ? await updateProductAction(productId, values)
-        : await createProductAction(values, { autoSku: !skuTouched });
+        ? await updateProductAction(productId, payload)
+        : await createProductAction(payload, { autoSku: !skuTouched });
       if (!result.ok) {
         const message = result.error ?? (productId ? "Failed to update product" : "Failed to create product");
         setError(message);
@@ -295,18 +443,53 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
 
       <section className="rounded-xl border border-border bg-white p-5">
         <h2 className="font-display text-base font-bold text-ink">Pricing & Stock</h2>
+        {hasSizeVariants && (
+          <p className="mt-1 text-xs text-muted">Pricing and stock are managed per size for this product.</p>
+        )}
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <Label htmlFor="product-price" className="mb-1.5 text-xs font-semibold text-ink-soft">Price (₹)</Label>
-            <Input id="product-price" required type="number" min={0} step="0.01" value={values.price} onChange={(e) => set("price", Number(e.target.value))} className="h-10" />
+            <Input
+              id="product-price"
+              required={!hasSizeVariants}
+              disabled={hasSizeVariants}
+              readOnly={hasSizeVariants}
+              type="number"
+              min={0}
+              step="0.01"
+              value={displayPrice}
+              onChange={(e) => set("price", Number(e.target.value))}
+              className="h-10 disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-70"
+            />
           </div>
           <div>
             <Label htmlFor="product-mrp" className="mb-1.5 text-xs font-semibold text-ink-soft">MRP (₹)</Label>
-            <Input id="product-mrp" required type="number" min={0} step="0.01" value={values.mrp} onChange={(e) => set("mrp", Number(e.target.value))} className="h-10" />
+            <Input
+              id="product-mrp"
+              required={!hasSizeVariants}
+              disabled={hasSizeVariants}
+              readOnly={hasSizeVariants}
+              type="number"
+              min={0}
+              step="0.01"
+              value={displayMrp}
+              onChange={(e) => set("mrp", Number(e.target.value))}
+              className="h-10 disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-70"
+            />
           </div>
           <div>
             <Label htmlFor="product-stock" className="mb-1.5 text-xs font-semibold text-ink-soft">Stock</Label>
-            <Input id="product-stock" required type="number" min={0} value={values.stock} onChange={(e) => set("stock", Number(e.target.value))} className="h-10" />
+            <Input
+              id="product-stock"
+              required={!hasSizeVariants}
+              disabled={hasSizeVariants}
+              readOnly={hasSizeVariants}
+              type="number"
+              min={0}
+              value={displayStock}
+              onChange={(e) => set("stock", Number(e.target.value))}
+              className="h-10 disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-70"
+            />
           </div>
         </div>
       </section>
@@ -314,11 +497,18 @@ export function ProductForm({ categories, initial, productId }: ProductFormProps
       <section className="rounded-xl border border-border bg-white p-5">
         <h2 className="font-display text-base font-bold text-ink">Variants & Highlights</h2>
         <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <TagListInput label="Sizes" values={values.sizes} onChange={(v) => set("sizes", v)} placeholder="e.g. M, L, XL" />
+          <div>
+            <TagListInput label="Sizes" values={values.sizes} onChange={handleSizesChange} placeholder="e.g. M, L, XL" />
+            {sizeError && <p className="mt-1.5 text-xs font-medium text-signal">{sizeError}</p>}
+          </div>
           <TagListInput label="Colors" values={values.colors} onChange={(v) => set("colors", v)} placeholder="e.g. Black, Red" />
           <div className="sm:col-span-2">
             <TagListInput label="Highlights" values={values.highlights} onChange={(v) => set("highlights", v)} placeholder="e.g. Sweat-wicking fabric" />
           </div>
+        </div>
+
+        <div className="mt-5">
+          <VariantEditor sizes={values.sizes} variants={values.variants} onChange={(v) => set("variants", v)} />
         </div>
 
         <div className="mt-5">

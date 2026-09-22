@@ -7,6 +7,7 @@ import { useCart } from "@/lib/context/CartContext";
 import { useWishlist } from "@/lib/context/WishlistContext";
 import { useBuyNow } from "@/lib/context/BuyNowContext";
 import { useProductsByIds } from "@/lib/hooks/useProductsByIds";
+import { resolveVariantMrp, resolveVariantPrice } from "@/lib/data/products";
 import { formatPrice } from "@/lib/utils/format";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
@@ -35,8 +36,9 @@ export function CartPageClient() {
     for (const item of items) {
       const product = products[item.productId];
       if (!product) continue;
-      subtotal += product.price * item.quantity;
-      mrpTotal += product.mrp * item.quantity;
+      const price = resolveVariantPrice(product, item.variantId);
+      subtotal += price * item.quantity;
+      mrpTotal += resolveVariantMrp(product, item.variantId) * item.quantity;
     }
     return { subtotal, mrpTotal };
   }, [items, products]);
@@ -58,9 +60,10 @@ export function CartPageClient() {
       return {
         name: product.name,
         productId: product.id,
+        variantId: item.variantId,
         sku: product.sku,
         quantity: item.quantity,
-        price: product.price,
+        price: resolveVariantPrice(product, item.variantId),
         size: item.size,
         color: item.color,
         imageUrl: product.images[0]?.url ?? null,
@@ -110,7 +113,8 @@ export function CartPageClient() {
               {items.map((item) => {
                 const product = products[item.productId];
                 if (!product) return null;
-                const key = `${item.productId}-${item.size}-${item.color}`;
+                const key = `${item.productId}-${item.variantId}-${item.size}-${item.color}`;
+                const price = resolveVariantPrice(product, item.variantId);
                 const attributes = [
                   item.size ? ["Size", item.size] : null,
                   item.color ? ["Color", item.color] : null,
@@ -153,7 +157,7 @@ export function CartPageClient() {
                         <button
                           type="button"
                           aria-label={`Remove ${product.name}`}
-                          onClick={() => removeItem(item.productId, item.size, item.color)}
+                          onClick={() => removeItem(item.productId, item.variantId, item.size, item.color)}
                           className="h-auto shrink-0 p-1 text-ink transition-colors hover:text-signal"
                         >
                           <X className="h-4 w-4" strokeWidth={1} />
@@ -161,7 +165,7 @@ export function CartPageClient() {
                       </div>
 
                       <p className="mb-4 text-xs font-bold tracking-widest text-muted opacity-60 md:mb-6 md:text-sm">
-                        {formatPrice(product.price)}
+                        {formatPrice(price)}
                       </p>
 
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -170,7 +174,7 @@ export function CartPageClient() {
                             type="button"
                             aria-label="Decrease quantity"
                             onClick={() =>
-                              updateQuantity(item.productId, item.size, item.color, item.quantity - 1)
+                              updateQuantity(item.productId, item.variantId, item.size, item.color, item.quantity - 1)
                             }
                             className="flex h-7 w-7 items-center justify-center rounded-full"
                           >
@@ -186,6 +190,7 @@ export function CartPageClient() {
                             onClick={() =>
                               updateQuantity(
                                 item.productId,
+                                item.variantId,
                                 item.size,
                                 item.color,
                                 Math.min(10, item.quantity + 1)
@@ -197,14 +202,14 @@ export function CartPageClient() {
                           </button>
                         </div>
                         <p className="whitespace-nowrap text-sm font-normal tracking-wider md:hidden">
-                          {formatPrice(product.price * item.quantity)}
+                          {formatPrice(price * item.quantity)}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
                           toggleWishlist(item.productId);
-                          removeItem(item.productId, item.size, item.color);
+                          removeItem(item.productId, item.variantId, item.size, item.color);
                         }}
                         className="mt-3 text-[10px] font-bold tracking-widest text-muted uppercase transition-colors hover:text-ink"
                       >
@@ -214,7 +219,7 @@ export function CartPageClient() {
 
                     <div className="hidden shrink-0 text-right md:block">
                       <p className="whitespace-nowrap text-sm font-normal tracking-wider md:text-base">
-                        {formatPrice(product.price * item.quantity)}
+                        {formatPrice(price * item.quantity)}
                       </p>
                     </div>
                   </div>

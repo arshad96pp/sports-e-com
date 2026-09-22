@@ -28,5 +28,25 @@ drop policy if exists "storage_store_assets_public_read" on storage.objects;
 drop policy if exists "storage_store_assets_admin_insert" on storage.objects;
 drop policy if exists "storage_store_assets_admin_update" on storage.objects;
 drop policy if exists "storage_store_assets_admin_delete" on storage.objects;
-delete from storage.objects where bucket_id = 'store-assets';
-delete from storage.buckets where id = 'store-assets';
+
+-- Some Storage engine versions reject a direct `delete from storage.objects`
+-- ("Use the Storage API instead"), which would otherwise break replaying
+-- this migration from scratch (e.g. `supabase db reset`) even though it's a
+-- no-op on a freshly-bootstrapped database that never had any files
+-- uploaded to this bucket. Best-effort cleanup, not required for correctness
+-- here — swallow that specific failure instead of aborting the migration.
+do $$
+begin
+  delete from storage.objects where bucket_id = 'store-assets';
+exception
+  when insufficient_privilege then null;
+end
+$$;
+
+do $$
+begin
+  delete from storage.buckets where id = 'store-assets';
+exception
+  when insufficient_privilege then null;
+end
+$$;

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { BadgeCheck, RotateCcw, ShieldCheck, Truck, ZoomIn } from "lucide-react";
 import type { Product } from "@/lib/types";
-import { getDiscountPercent } from "@/lib/data/products";
+import { getDiscountPercent, resolveVariantMrp, resolveVariantPrice } from "@/lib/data/products";
 import type { ReviewDTO } from "@/lib/services/review-service";
 import { ProductReviews } from "@/components/product/ProductReviews";
 import { RichText } from "@/components/product/RichText";
@@ -28,8 +28,13 @@ interface ProductDetailClientProps {
 }
 
 export function ProductDetailClient({ product, related, reviews }: ProductDetailClientProps) {
+  const hasVariants = product.variants.length > 0;
+  // Prefers the first in-stock size as the default selection; falls back to
+  // the first size at all if every one is out of stock.
+  const defaultVariant = hasVariants ? (product.variants.find((v) => v.stock > 0) ?? product.variants[0]) : null;
   const [activeImage, setActiveImage] = useState(0);
-  const [size, setSize] = useState<string | null>(product.sizes[0] ?? null);
+  const [variantId, setVariantId] = useState<string | null>(defaultVariant?.id ?? null);
+  const [size, setSize] = useState<string | null>(defaultVariant ? defaultVariant.size : (product.sizes[0] ?? null));
   const [color, setColor] = useState<string | null>(product.colors[0] ?? null);
   const [quantity, setQuantity] = useState(1);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
@@ -41,13 +46,22 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
 
   const { addItem } = useCart();
   const { openBuyNow } = useBuyNow();
-  const discount = getDiscountPercent(product);
+  const displayPrice = resolveVariantPrice(product, variantId);
+  const displayMrp = resolveVariantMrp(product, variantId);
+  const discount = getDiscountPercent({ price: displayPrice, mrp: displayMrp });
+  const selectedVariant = hasVariants ? product.variants.find((v) => v.id === variantId) : undefined;
+  const inStock = hasVariants ? (selectedVariant?.stock ?? 0) > 0 : product.inStock;
 
   const activePhoto = product.images[activeImage] ?? product.images[0];
   const activePhotoSrc = brokenImages[activeImage] ? null : activePhoto?.url;
 
+  function selectVariant(v: (typeof product.variants)[number]) {
+    setVariantId(v.id);
+    setSize(v.size);
+  }
+
   function handleAddToCart() {
-    addItem(product.id, { quantity, size, color, productName: product.name });
+    addItem(product.id, { quantity, variantId, size, color, productName: product.name });
   }
 
   function handleBuyNow() {
@@ -56,9 +70,10 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
         {
           name: product.name,
           productId: product.id,
+          variantId,
           sku: product.sku,
           quantity,
-          price: product.price,
+          price: displayPrice,
           size,
           color,
           imageUrl: product.images[0]?.url ?? null,
@@ -159,13 +174,13 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
           </h1>
           <div className="mt-2.5 flex items-center gap-3">
             <RatingStars rating={product.rating} reviewCount={product.reviewCount} size="md" />
-            <span className={`text-xs font-semibold ${product.inStock ? "text-success" : "text-signal"}`}>
-              {product.inStock ? "In Stock" : "Out of Stock"}
+            <span className={`text-xs font-semibold ${inStock ? "text-success" : "text-signal"}`}>
+              {inStock ? "In Stock" : "Out of Stock"}
             </span>
           </div>
 
           <div className="mt-4 border-t border-border pt-4">
-            <PriceBlock price={product.price} mrp={product.mrp} size="lg" />
+            <PriceBlock price={displayPrice} mrp={displayMrp} size="lg" />
             <p className="mt-1 text-xs text-muted">Inclusive of all taxes</p>
           </div>
 
@@ -198,29 +213,59 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
             </div>
           )}
 
-          {product.sizes.length > 0 && (
+          {hasVariants ? (
             <div className="mt-5">
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink">
                 Size{size ? `: ${size}` : ""}
               </p>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={size === s}
-                    onClick={() => setSize(s)}
-                    className={`min-w-12 cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-                      size === s
-                        ? "border-ink bg-ink text-white"
-                        : "border-border-strong text-ink-soft hover:border-ink"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {product.variants.map((v) => {
+                  const outOfStock = v.stock <= 0;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      aria-pressed={variantId === v.id}
+                      disabled={outOfStock}
+                      title={outOfStock ? `${v.size} is out of stock` : undefined}
+                      onClick={() => selectVariant(v)}
+                      className={`min-w-12 cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-muted-soft disabled:opacity-50 ${
+                        variantId === v.id
+                          ? "border-ink bg-ink text-white"
+                          : "border-border-strong text-ink-soft hover:border-ink"
+                      }`}
+                    >
+                      {v.size}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+          ) : (
+            product.sizes.length > 0 && (
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink">
+                  Size{size ? `: ${size}` : ""}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      aria-pressed={size === s}
+                      onClick={() => setSize(s)}
+                      className={`min-w-12 cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                        size === s
+                          ? "border-ink bg-ink text-white"
+                          : "border-border-strong text-ink-soft hover:border-ink"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
           )}
 
           <div className="mt-5">
@@ -232,15 +277,15 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={!product.inStock}
+              disabled={!inStock}
               className="tap-target flex-1 cursor-pointer rounded-full border-2 border-ink text-sm font-bold text-ink transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:border-border-strong disabled:text-muted-soft disabled:hover:bg-transparent"
             >
-              {product.inStock ? "Add to Cart" : "Out of Stock"}
+              {inStock ? "Add to Cart" : "Out of Stock"}
             </button>
             <button
               type="button"
               onClick={handleBuyNow}
-              disabled={!product.inStock}
+              disabled={!inStock}
               className="tap-target flex-1 cursor-pointer rounded-full bg-ink text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-border-strong disabled:text-muted-soft disabled:active:scale-100"
             >
               Buy Now
@@ -256,7 +301,7 @@ export function ProductDetailClient({ product, related, reviews }: ProductDetail
             <div className="flex items-start gap-2">
               <Truck className="mt-0.5 h-4 w-4 shrink-0 text-ink" />
               <p className="text-xs text-ink-soft">
-                {product.price >= FREE_SHIPPING_THRESHOLD ? "Free delivery" : `Free delivery above ${formatPrice(FREE_SHIPPING_THRESHOLD)}`}, 3-5 business days
+                {displayPrice >= FREE_SHIPPING_THRESHOLD ? "Free delivery" : `Free delivery above ${formatPrice(FREE_SHIPPING_THRESHOLD)}`}, 3-5 business days
               </p>
             </div>
             <div className="flex items-start gap-2">
