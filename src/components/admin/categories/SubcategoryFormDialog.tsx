@@ -23,19 +23,29 @@ function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+function valuesForSubcategory(categories: AdminCategory[], subcategory?: AdminSubcategory): SubcategoryFormValues {
+  return subcategory
+    ? { categoryId: subcategory.categoryId, name: subcategory.name, slug: subcategory.slug, isActive: subcategory.isActive }
+    : { categoryId: categories[0]?.id ?? "", name: "", slug: "", isActive: true };
+}
+
 export function SubcategoryFormDialog({ categories, subcategory }: { categories: AdminCategory[]; subcategory?: AdminSubcategory }) {
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<SubcategoryFormValues>(
-    subcategory
-      ? { categoryId: subcategory.categoryId, name: subcategory.name, slug: subcategory.slug, isActive: subcategory.isActive }
-      : { categoryId: categories[0]?.id ?? "", name: "", slug: "", isActive: true }
-  );
+  const [values, setValues] = useState<SubcategoryFormValues>(() => valuesForSubcategory(categories, subcategory));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
 
   function set<K extends keyof SubcategoryFormValues>(key: K, value: SubcategoryFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      setValues(valuesForSubcategory(categories, subcategory));
+      setError(null);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -55,7 +65,7 @@ export function SubcategoryFormDialog({ categories, subcategory }: { categories:
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {subcategory ? (
           <Button variant="outline" size="sm">Edit</Button>

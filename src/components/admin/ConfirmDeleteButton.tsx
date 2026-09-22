@@ -10,7 +10,6 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
@@ -43,16 +42,20 @@ export function ConfirmDeleteButton({ itemLabel, entityName, onConfirm }: Confir
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent className="rounded-2xl border border-border bg-white shadow-[0_20px_60px_rgba(10,10,10,0.10)] ring-0">
-        <AlertDialogHeader>
-          <AlertDialogMedia className="bg-signal-soft text-signal">
-            <AlertTriangle />
-          </AlertDialogMedia>
-          <AlertDialogTitle>Delete {itemLabel}?</AlertDialogTitle>
-          <AlertDialogDescription>This can&apos;t be undone.</AlertDialogDescription>
+      <AlertDialogContent className="gap-5 rounded-2xl border border-border bg-white p-5 shadow-[0_20px_60px_rgba(10,10,10,0.10)] ring-0">
+        <AlertDialogHeader className="place-items-start text-left">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-signal-soft text-signal">
+              <AlertTriangle className="size-5" />
+            </div>
+            <div className="space-y-1 pt-0.5">
+              <AlertDialogTitle>Delete {itemLabel}?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            </div>
+          </div>
         </AlertDialogHeader>
         <AdminModalError>{error}</AdminModalError>
-        <AlertDialogFooter className="rounded-b-2xl bg-white">
+        <AlertDialogFooter className="-mx-5 -mb-5 gap-2 rounded-b-2xl border-t border-border bg-white px-5 py-4">
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             disabled={isPending}

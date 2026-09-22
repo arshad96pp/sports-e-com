@@ -38,24 +38,24 @@ const EMPTY: CategoryFormValues = {
   icon: "other",
 };
 
+function valuesFromCategory(category: AdminCategory): CategoryFormValues {
+  return {
+    name: category.name,
+    slug: category.slug,
+    shortName: category.shortName,
+    description: category.description,
+    listingBlurb: category.listingBlurb,
+    seoTitle: category.seoTitle,
+    seoDescription: category.seoDescription,
+    sortOrder: category.sortOrder,
+    isActive: category.isActive,
+    icon: "other",
+  };
+}
+
 export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<CategoryFormValues>(
-    category
-      ? {
-          name: category.name,
-          slug: category.slug,
-          shortName: category.shortName,
-          description: category.description,
-          listingBlurb: category.listingBlurb,
-          seoTitle: category.seoTitle,
-          seoDescription: category.seoDescription,
-          sortOrder: category.sortOrder,
-          isActive: category.isActive,
-          icon: "other",
-        }
-      : EMPTY
-  );
+  const [values, setValues] = useState<CategoryFormValues>(category ? valuesFromCategory(category) : EMPTY);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -63,6 +63,15 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
 
   function set<K extends keyof CategoryFormValues>(key: K, value: CategoryFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      setValues(category ? valuesFromCategory(category) : EMPTY);
+      setError(null);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -100,7 +109,7 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {category ? (
           <Button variant="outline" size="sm">Edit</Button>

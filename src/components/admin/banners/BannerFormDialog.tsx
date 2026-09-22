@@ -24,26 +24,36 @@ interface BannerLike extends BannerFormValues {
   id: string;
 }
 
+function emptyValues(): BannerFormValues {
+  return {
+    eyebrow: "",
+    title: "",
+    subtitle: "",
+    ctaLabel: "Shop Now",
+    ctaHref: "/",
+    categoryId: null,
+    sortOrder: 0,
+    isActive: false,
+  };
+}
+
 export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; categories: { id: string; name: string }[] }) {
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<BannerFormValues>(
-    banner ?? {
-      eyebrow: "",
-      title: "",
-      subtitle: "",
-      ctaLabel: "Shop Now",
-      ctaHref: "/",
-      categoryId: null,
-      sortOrder: 0,
-      isActive: false,
-    }
-  );
+  const [values, setValues] = useState<BannerFormValues>(banner ?? emptyValues());
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
 
   function set<K extends keyof BannerFormValues>(key: K, value: BannerFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      setValues(banner ?? emptyValues());
+      setError(null);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -63,7 +73,7 @@ export function BannerFormDialog({ banner, categories }: { banner?: BannerLike; 
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {banner ? (
           <Button variant="outline" size="sm">Edit</Button>

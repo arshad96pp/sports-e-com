@@ -37,6 +37,17 @@ function emptyForm(): OfferFormValues {
   };
 }
 
+function valuesForOffer(offer?: AdminOffer): OfferFormValues {
+  return offer
+    ? {
+        ...offer,
+        startDate: toDateInput(offer.startDate),
+        endDate: toDateInput(offer.endDate),
+        categoryIds: offer.categoryIds.slice(0, 1),
+      }
+    : emptyForm();
+}
+
 export function OfferFormDialog({
   offer,
   categories,
@@ -45,16 +56,7 @@ export function OfferFormDialog({
   categories: { id: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<OfferFormValues>(() =>
-    offer
-      ? {
-          ...offer,
-          startDate: toDateInput(offer.startDate),
-          endDate: toDateInput(offer.endDate),
-          categoryIds: offer.categoryIds.slice(0, 1),
-        }
-      : emptyForm()
-  );
+  const [values, setValues] = useState<OfferFormValues>(() => valuesForOffer(offer));
   const [error, setError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -65,6 +67,15 @@ export function OfferFormDialog({
 
   function set<K extends keyof OfferFormValues>(key: K, value: OfferFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      setValues(valuesForOffer(offer));
+      setError(null);
+      setCategoryError(null);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -95,7 +106,7 @@ export function OfferFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {offer ? (
           <Button variant="outline" size="sm">Edit</Button>

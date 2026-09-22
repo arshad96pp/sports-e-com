@@ -15,7 +15,7 @@ export default async function NewProductPage() {
         title="New Product"
         description="SKU is generated automatically from the slug — edit it if you need a custom value. Images can be added after the product is created."
       />
-      <ProductForm categories={categories} />
+      <ProductForm key="new" categories={categories} />
     </div>
   );
 }

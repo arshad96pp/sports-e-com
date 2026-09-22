@@ -20,7 +20,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <div className="mb-6">
         <ProductImageManager productId={id} initialImages={product.images.map((i) => ({ id: i.id, url: i.url }))} />
       </div>
-      <ProductForm categories={categories} productId={id} initial={product} />
+      <ProductForm key={id} categories={categories} productId={id} initial={product} />
     </div>
   );
 }
