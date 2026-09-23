@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { getSuperAdminOrNull } from "@/lib/auth/admin-guard";
 import * as adminCategoryService from "@/lib/services/admin-category-service";
 import type { CategoryFormValues, SubcategoryFormValues } from "@/lib/services/admin-category-service";
-import { processAndUploadImage } from "@/lib/services/image-service";
+import { processAndUploadImage, deleteImage, pathFromPublicUrl } from "@/lib/services/image-service";
 import type { ActionResult } from "@/lib/actions/admin/product-actions";
 
 function revalidateStorefront() {
@@ -53,7 +53,11 @@ export async function deleteCategoryAction(id: string): Promise<ActionResult> {
   }
 }
 
-export async function uploadCategoryImageAction(categoryId: string, formData: FormData): Promise<ActionResult<{ url: string }>> {
+export async function uploadCategoryImageAction(
+  categoryId: string,
+  formData: FormData,
+  previousImageUrl?: string | null
+): Promise<ActionResult<{ url: string }>> {
   const admin = await getSuperAdminOrNull();
   if (!admin) return { ok: false, error: "Unauthorized" };
 
@@ -66,8 +70,18 @@ export async function uploadCategoryImageAction(categoryId: string, formData: Fo
   try {
     await adminCategoryService.setCategoryImage(categoryId, result.publicUrl);
   } catch (error) {
+    // DB write failed — the old image is still referenced, so drop the orphaned upload.
+    await deleteImage("category-images", result.path);
     return { ok: false, error: error instanceof Error ? error.message : "Could not save image." };
   }
+
+  // Only remove the previous image once the new one is uploaded and saved, so a
+  // failure above never leaves the category without any image.
+  if (previousImageUrl) {
+    const oldPath = pathFromPublicUrl("category-images", previousImageUrl);
+    if (oldPath) await deleteImage("category-images", oldPath);
+  }
+
   revalidateStorefront();
   revalidatePath("/admin/categories");
   return { ok: true, data: { url: result.publicUrl } };

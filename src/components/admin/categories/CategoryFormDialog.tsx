@@ -55,7 +55,13 @@ function valuesFromCategory(category: AdminCategory): CategoryFormValues {
   };
 }
 
-export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
+export function CategoryFormDialog({
+  category,
+  onImageUploaded,
+}: {
+  category?: AdminCategory;
+  onImageUploaded?: (url: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<CategoryFormValues>(category ? valuesFromCategory(category) : EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -99,12 +105,16 @@ export function CategoryFormDialog({ category }: { category?: AdminCategory }) {
         }
         const formData = new FormData();
         formData.set("file", optimized.file);
-        const uploadResult = await uploadCategoryImageAction(categoryId, formData);
+        const uploadResult = await uploadCategoryImageAction(categoryId, formData, category?.imageUrl);
         if (!uploadResult.ok) {
           setError(uploadResult.error ?? "Failed to upload category image");
           showToast(uploadResult.error ?? "Failed to upload category image", "error");
           return;
         }
+        // Apply the freshly uploaded URL straight to the list's UI state rather than
+        // waiting on the server-rendered list to catch up on its own — the same
+        // pattern ProductImageManager uses so a replaced image shows on the first Save.
+        if (uploadResult.data) onImageUploaded?.(uploadResult.data.url);
       }
       showToast(category ? "Category updated successfully" : "Category created successfully", "success");
       setOpen(false);
